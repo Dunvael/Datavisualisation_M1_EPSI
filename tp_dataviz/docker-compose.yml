@@ -1,0 +1,118 @@
+services:
+  # --- Prometheus ---
+  prometheus:
+    image: prom/prometheus:v3.7.2
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks: [monitoring]
+
+  # --- Grafana ---
+  grafana:
+    image: grafana/grafana:12.2.0
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    depends_on: [prometheus]
+    networks: [monitoring]
+
+  # --- MySQL (LTS 8.4.x) ---
+  mysql:
+    image: mysql:8.4.7
+    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=tpdb
+      - MYSQL_USER=tpuser
+      - MYSQL_PASSWORD=tppass
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks: [monitoring]
+
+  # --- MySQL Exporter ---
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.18.0
+    container_name: mysqld-exporter
+    environment:
+      - DATA_SOURCE_NAME=exporter:exporterpass@(mysql:3306)/
+    depends_on: [mysql]
+    ports:
+      - "9104:9104"
+    networks: [monitoring]
+
+  # --- Node Exporter (hôte WSL/VM Docker) ---
+  node-exporter-host:
+    image: prom/node-exporter:v1.10.2
+    container_name: node-exporter-host
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    networks: [monitoring]
+
+  # --- Node Exporter (2e "nœud" simulé) ---
+  node-exporter-node2:
+    image: prom/node-exporter:v1.10.2
+    container_name: node-exporter-node2
+    command:
+      - '--collector.disable-defaults=false'
+    ports:
+      - "9101:9100"
+    networks: [monitoring]
+
+  # --- Loki (logs) ---
+  loki:
+    image: grafana/loki:3.5.7
+    container_name: loki
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks: [monitoring]
+
+  # --- Promtail (collecte logs Docker) ---
+  promtail:
+    image: grafana/promtail:3.5.7
+    container_name: promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./loki/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    ports:
+      - "9080:9080"
+    networks: [monitoring]
+    depends_on: [loki]
+
+networks:
+  monitoring:
+
+volumes:
+  prom_data:
+  grafana_data:
+  mysql_data:
+  loki_data:

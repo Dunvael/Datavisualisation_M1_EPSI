@@ -65,28 +65,24 @@ else
 fi
 
 # Grafana: /api/health (sans auth) peut prendre quelques secondes au 1er démarrage
-GRAFANA_WAIT=0
+GRAFANA_WAIT=0; GRAFANA_TIMEOUT=20
 until curl -sf http://localhost:3000/api/health | grep -q '"database":"ok"'; do
-  echo "⏳ Grafana pas encore prêt..."; sleep 2
-  GRAFANA_WAIT=$((GRAFANA_WAIT+10))
-  if [ "$GRAFANA_WAIT" -ge 60 ]; then
-    echo "❌ Grafana KO (timeout). Regarde les logs: docker compose logs grafana"
-    break
+  echo "⏳ Grafana pas encore prêt..."; sleep 2; GRAFANA_WAIT=$((GRAFANA_WAIT+2))
+  if [ "$GRAFANA_WAIT" -ge "$GRAFANA_TIMEOUT" ]; then
+    echo "❌ Grafana KO (timeout ${GRAFANA_TIMEOUT}s). Logs: docker compose logs grafana"; break
   fi
 done
-if [ "$GRAFANA_WAIT" -lt 60 ]; then echo "✅ Grafana OK"; fi
+if [ "$GRAFANA_WAIT" -lt "$GRAFANA_TIMEOUT" ]; then echo "✅ Grafana OK"; fi
 
 # Loki: /ready renvoie 200 + "ready" quand prêt
-LOKI_WAIT=0
-until curl -sf http://localhost:3100/ready >/dev/null; do
-  echo "⏳ Loki pas encore prêt..."; sleep 2
-  LOKI_WAIT=$((LOKI_WAIT+10))
-  if [ "$LOKI_WAIT" -ge 60 ]; then
-    echo "❌ Loki KO (timeout). Regarde les logs: docker compose logs loki"
-    break
+LOKI_WAIT=0; LOKI_TIMEOUT=20
+until curl -s -o /dev/null -w '%{http_code}' http://localhost:3100/ready | grep -q '^200$'; do
+  echo "⏳ Loki pas encore prêt..."; sleep 2; LOKI_WAIT=$((LOKI_WAIT+2))
+  if [ "$LOKI_WAIT" -ge "$LOKI_TIMEOUT" ]; then
+    echo "❌ Loki KO (timeout ${LOKI_TIMEOUT}s). Logs: docker compose logs loki"; break
   fi
 done
-if [ "$LOKI_WAIT" -lt 60 ]; then echo "✅ Loki OK"; fi
+if [ "$LOKI_WAIT" -lt "$LOKI_TIMEOUT" ]; then echo "✅ Loki OK"; fi
 
 echo
 echo "✅ Déploiement complet terminé avec succès !"

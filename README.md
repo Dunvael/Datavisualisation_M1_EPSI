@@ -76,15 +76,12 @@ docker compose pull
 
 ### Lance les conteneurs (et fait un pull automatique si besoin) => Obligatoire
 
-```
-docker compose up -d mysql
-```
+| Commande                                  | Effet                                                            |
+| ----------------------------------------- | ---------------------------------------------------------------- |
+| `docker compose up -d mysql`              | Lance **uniquement** le service `mysql`                          |
+| `docker compose up -d`                    | Lance **tous les services** définis dans le `docker-compose.yml` |
+| `docker compose up -d prometheus grafana` | Lance **uniquement** les services listés                         |
 
-### Démarrer MySQL
-
-```
-docker compose up -d mysql
-```
 
 ### Attendre que MySQL réponde (boucle automatique)
 

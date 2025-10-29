@@ -8,9 +8,7 @@ common:
   path_prefix: /loki
   instance_addr: 127.0.0.1
   storage:
-    filesystem:
-      chunks_directory: /loki/chunks
-      rules_directory: /loki/rules
+    filesystem: {}        # OK pour 3.x
   ring:
     kvstore:
       store: inmemory
@@ -23,12 +21,10 @@ limits_config:
 # Chemins requis par boltdb-shipper (index + cache)
 storage_config:
   filesystem:
-    chunks_directory: /loki/chunks
-    rules_directory: /loki/rules
+    directory: /loki/chunks           # <- remplace chunks_directory/rules_directory
   boltdb_shipper:
     active_index_directory: /loki/index
     cache_location: /loki/boltdb-cache
-    shared_store: filesystem
 
 schema_config:
   configs:

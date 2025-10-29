@@ -101,6 +101,21 @@ La correction la plus simple pour le TP est de rester en boltdb-shipper et d’a
 
 * common.path_prefix: /loki ➜ simplifie les chemins dans le volume loki_data déjà monté.
 
+Résolution en plus : l’erreur vient de clés YAML obsolètes / incorrectes pour Loki 3.x dans storage_config.  
+En 3.x :
+
+* storage_config.filesystem n’accepte plus chunks_directory/rules_directory → il faut directory.
+* Dans boltdb_shipper, la clé shared_store n’existe plus → à supprimer.
+
+Le message sur allow_structured_metadata est déjà réglé (mis à false).
+
+```
+    ...
+  storage:
+    filesystem: {}        # OK pour 3.x
+    ...
+    directory: /loki/chunks           # <- remplace chunks_directory/rules_directory
+```
 ___
 
 ## Déploiement de tout le TP (script auto deploy.sh)

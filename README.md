@@ -68,6 +68,8 @@ ___
 
 ## Résolution erreurs
 
+### MySQL qui ne démarre pas
+
 Pour MySQL 8.4.7 on supprime la `directive command` dans la catégorie `environnement` de la partie `MySql` dans le docker-compose.  
 En effet, MySQL 8.4.7 n’a plus besoin (et n’accepte plus) `--default-authentication-plugin=mysql_native_password`. Le laisser provoque une erreur.  
 Le plugin par défaut caching_sha2_password est désormais standard.
@@ -79,6 +81,25 @@ Le plugin par défaut caching_sha2_password est désormais standard.
 
 👉 Prometheus mysqld-exporter supporte parfaitement caching_sha2_password, donc aucune action particulière n’est nécessaire.
 On aurait eu besoin de mysql_native_password uniquement pour de très vieux connecteurs PHP ou Python.
+
+### Loki qui ne démarre pas
+
+Le souci vient de Loki qui ne démarre pas à cause de la config. Les logs disent clairement que j'utilises store: boltdb-shipper, mais Loki 3.x exige :
+
+* soit d’autoriser l’absence de structured metadata (allow_structured_metadata: false),
+* soit de passer au schéma tsdb (plus avancé).
+
+Et avec boltdb-shipper, il manque les chemins active_index_directory et cache_location (ou un path_prefix global).
+
+La correction la plus simple pour le TP est de rester en boltdb-shipper et d’ajouter les champs manquants + de désactiver structured metadata.
+
+#### *Modification du loki-config.yml : Points clés :*
+
+* limits_config.allow_structured_metadata: false ➜ supprime l’obligation d’un index tsdb.
+
+* storage_config.boltdb_shipper.active_index_directory + cache_location ➜ requis avec boltdb-shipper.
+
+* common.path_prefix: /loki ➜ simplifie les chemins dans le volume loki_data déjà monté.
 
 ___
 

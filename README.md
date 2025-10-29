@@ -66,6 +66,22 @@ Versions figées :
 
 ___
 
+## Résolution erreurs
+
+Pour MySQL 8.4.7 on supprime la `directive command` dans la catégorie `environnement` de la partie `MySql` dans le docker-compose.  
+En effet, MySQL 8.4.7 n’a plus besoin (et n’accepte plus) `--default-authentication-plugin=mysql_native_password`. Le laisser provoque une erreur.  
+Le plugin par défaut caching_sha2_password est désormais standard.
+
+| Plugin                  | Description                                             | Support                            |
+| ----------------------- | ------------------------------------------------------- | ---------------------------------- |
+| `mysql_native_password` | Ancien mode d’auth (MySQL ≤ 8.0)                        | Déprécié / retiré en 8.4           |
+| `caching_sha2_password` | Authentification sécurisée par SHA-256 avec cache local | Par défaut en 8.4 (et plus rapide) |
+
+👉 Prometheus mysqld-exporter supporte parfaitement caching_sha2_password, donc aucune action particulière n’est nécessaire.
+On aurait eu besoin de mysql_native_password uniquement pour de très vieux connecteurs PHP ou Python.
+
+___
+
 ## Déploiement de tout le TP (script auto deploy.sh)
 
 ### 1. Télécharger images

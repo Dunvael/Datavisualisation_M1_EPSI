@@ -31,14 +31,17 @@ docker compose up -d mysql
 
 echo
 echo "=== ⏳ Attente de la disponibilité de MySQL ==="
-until docker exec mysql mysqladmin ping -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; do
+until docker exec mysql mysqladmin ping -h 127.0.0.1 -P 3306 -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; do
   echo "⏳ MySQL n'est pas encore prêt..."; sleep 2
 done
 echo "✅ MySQL est prêt."
 
+# Petit délai pour laisser le service totalement prêt
+sleep 2
+
 echo
 echo "=== 👤 Création (ou mise à jour) de l'utilisateur exporter ==="
-cat <<SQL | docker exec -i mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD"
+cat <<SQL | docker exec -i mysql mysql -h 127.0.0.1 -P 3306 -uroot -p"$MYSQL_ROOT_PASSWORD"
 CREATE USER IF NOT EXISTS '${MYSQL_EXPORTER_USER}'@'%' IDENTIFIED BY '${MYSQL_EXPORTER_PASSWORD}';
 GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '${MYSQL_EXPORTER_USER}'@'%';
 FLUSH PRIVILEGES;

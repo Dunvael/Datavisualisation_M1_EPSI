@@ -1,0 +1,15 @@
+# Ignore les fichiers sensibles
+.env
+
+# Dossiers d'éditeur
+.vscode/
+.idea/
+
+# Fichiers temporaires
+*.log
+*.tmp
+*.bak
+
+# Fichiers système
+.DS_Store
+Thumbs.db

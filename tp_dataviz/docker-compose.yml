@@ -18,8 +18,8 @@ services:
     image: grafana/grafana:12.2.0
     container_name: grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -33,10 +33,10 @@ services:
     image: mysql:8.4.7
     container_name: mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=rootpass
-      - MYSQL_DATABASE=tpdb
-      - MYSQL_USER=tpuser
-      - MYSQL_PASSWORD=tppass
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     command: ["--default-authentication-plugin=mysql_native_password"]
     volumes:
       - mysql_data:/var/lib/mysql
@@ -49,13 +49,13 @@ services:
     image: prom/mysqld-exporter:v0.18.0
     container_name: mysqld-exporter
     environment:
-      - DATA_SOURCE_NAME=exporter:exporterpass@(mysql:3306)/
+      - DATA_SOURCE_NAME=${MYSQL_EXPORTER_USER}:${MYSQL_EXPORTER_PASSWORD}@(${MYSQL_HOST}:${MYSQL_PORT})/
     depends_on: [mysql]
     ports:
       - "9104:9104"
     networks: [monitoring]
 
-  # --- Node Exporter (hôte WSL/VM Docker) ---
+  # --- Node Exporter (hôte) ---
   node-exporter-host:
     image: prom/node-exporter:v1.10.2
     container_name: node-exporter-host
@@ -73,7 +73,7 @@ services:
       - "9100:9100"
     networks: [monitoring]
 
-  # --- Node Exporter (2e "nœud" simulé) ---
+  # --- Node Exporter (2e "nœud") ---
   node-exporter-node2:
     image: prom/node-exporter:v1.10.2
     container_name: node-exporter-node2
@@ -83,7 +83,7 @@ services:
       - "9101:9100"
     networks: [monitoring]
 
-  # --- Loki (logs) ---
+  # --- Loki ---
   loki:
     image: grafana/loki:3.5.7
     container_name: loki
@@ -95,7 +95,7 @@ services:
       - "3100:3100"
     networks: [monitoring]
 
-  # --- Promtail (collecte logs Docker) ---
+  # --- Promtail ---
   promtail:
     image: grafana/promtail:3.5.7
     container_name: promtail

@@ -68,20 +68,42 @@ ___
 
 ## Commandes (déploiement)
 
-### Démarrer MySQL puis créer l’utilisateur pour l’exporter
+### Télécharger les images distantes aux bonnes versions (Optionnel mais recommandé)
+
+```
+docker compose pull
+```
+
+### Lance les conteneurs (et fait un pull automatique si besoin) => Obligatoire
 
 ```
 docker compose up -d mysql
 ```
 
-***Attendre ~10s puis créer l'utilisateur pour l'exporter***
+### Démarrer MySQL
 
 ```
-docker exec -it mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
+docker compose up -d mysql
+```
+
+### Attendre que MySQL réponde (boucle automatique)
+
+```
+until docker exec mysql mysqladmin ping -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; do
+  echo "⏳ Attente MySQL…"; sleep 2
+done
+echo "✅ MySQL prêt"
+```
+
+### Exécuter les requêtes SQL proprement et créer l’utilisateur pour l’exporter
+
+```
+cat <<SQL | docker exec -i mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD"
 CREATE USER IF NOT EXISTS '${MYSQL_EXPORTER_USER}'@'%' IDENTIFIED BY '${MYSQL_EXPORTER_PASSWORD}';
 GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '${MYSQL_EXPORTER_USER}'@'%';
 FLUSH PRIVILEGES;
-"
+SQL
+echo "✅ Utilisateur exporter créé/à jour"
 ```
 
 ### 1) Démarrer la stack “métriques”
@@ -94,6 +116,12 @@ docker compose up -d prometheus grafana mysqld-exporter node-exporter-host node-
 
 ```
 docker compose up -d loki promtail
+```
+
+### 3) Démarrer toute la stack (les métriques et les logs)
+
+```
+docker compose up -d prometheus grafana mysqld-exporter node-exporter-host node-exporter-node2 loki promtail
 ```
 
 ___
@@ -115,14 +143,29 @@ docker compose logs -f prometheus
 ### Prometheus up ?
 
 ```
-curl -sf http://localhost:9090/-/healthy && echo "Prometheus OK"
+curl -sf http://localhost:9090/-/healthy && echo "✅ Prometheus OK" || echo "❌ Prometheus KO"
+
 ```
 
 ### Cibles Prometheus (doivent être "UP")
 
+#### Sans jq
+
+```
+curl -s http://localhost:9090/api/v1/targets
+```
+
+#### Avec jq pour sortie propre
+
 ```
 curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[].health' | sort | uniq -c
 ```
+
+
+
+### (Optionnel, avec jq pour sortie propre)
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, instance: .labels.instance, health: .health}'
+
 
 ### Grafana accessible ?
 
@@ -148,7 +191,7 @@ curl -s http://localhost:9100/metrics | head
 curl -s http://localhost:9101/metrics | head
 ```
 
-### mysqld-exporter
+### mysqld-exporter actif (mysql_up doit valoir 1)
 
 ```
 curl -s http://localhost:9104/metrics | grep -E 'mysql_global_status|mysql_up' | head

@@ -1,8 +1,11 @@
 auth_enabled: false
+
 server:
   http_listen_port: 3100
 
+# Réglages communs + préfixe pour tous les chemins Loki dans le volume /loki
 common:
+  path_prefix: /loki
   instance_addr: 127.0.0.1
   storage:
     filesystem:
@@ -13,9 +16,23 @@ common:
       store: inmemory
   replication_factor: 1
 
+# Structured Metadata désactivée tant qu'on n'est pas en index tsdb
+limits_config:
+  allow_structured_metadata: false
+
+# Chemins requis par boltdb-shipper (index + cache)
+storage_config:
+  filesystem:
+    chunks_directory: /loki/chunks
+    rules_directory: /loki/rules
+  boltdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/boltdb-cache
+    shared_store: filesystem
+
 schema_config:
   configs:
-    - from: 2020-10-24
+    - from: 2024-01-01
       store: boltdb-shipper
       object_store: filesystem
       schema: v13

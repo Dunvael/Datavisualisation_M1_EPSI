@@ -3,6 +3,8 @@
 ```
 tp-dataviz/
 │
+├── .gitignore
+│
 ├── docker-compose.yml
 │
 ├── prometheus/
@@ -13,13 +15,13 @@ tp-dataviz/
 │       └── datasources/
 │           └── datasources.yml
 │
-├── loki/                       # (Optionnel si tu fais aussi les logs)
+├── loki/                       
 │   ├── loki-config.yml
 │   └── promtail-config.yml
 │
-├── logs/                       # (Optionnel) dossier local pour logs custom
+├── logs/                       
 │
-└── README.md                   # (facultatif, pour décrire ton TP)
+└── README.md                  
 ```
 
 ___
@@ -33,8 +35,8 @@ ___
 | **grafana/provisioning/datasources/datasources.yml** | Auto-provisioning des connexions Grafana (Prometheus et Loki).                                            |
 | **loki/loki-config.yml** *(optionnel)*               | Configuration du moteur de logs Loki.                                                                     |
 | **loki/promtail-config.yml** *(optionnel)*           | Configuration de Promtail pour collecter les logs Docker.                                                 |
-| **logs/** *(optionnel)*                              | Si tu veux y rediriger des logs de services ou de tests manuels.                                          |
-| **README.md**                                        | Notes de ton TP, commandes utiles, etc.                                                                   |
+| **logs/** *(optionnel)*                              | Redirige les logs de services ou de tests manuels.                                          |
+| **README.md**                                        | Notes du TP, commandes utiles, etc.                                                                   |
 
 ___
 
@@ -45,7 +47,7 @@ ___
 | `prom_data`    | Base de données interne de Prometheus    | `/prometheus`      |
 | `grafana_data` | Dashboards, datasources, comptes Grafana | `/var/lib/grafana` |
 | `mysql_data`   | Données MySQL (tables, users, etc.)      | `/var/lib/mysql`   |
-| `loki_data`    | Logs stockés par Loki (si activé)        | `/loki`            |
+| `loki_data`    | Logs stockés par Loki                    | `/loki`            |
 
 ___
 
@@ -66,32 +68,33 @@ ___
 
 ## Commandes (déploiement)
 
-Toujours dans Ubuntu/WSL (clône ton repo ici : ~/tp-dataviz).
-
-### Cloner le repo (si pas déjà fait dans WSL)
-
-git clone <URL_DE_REPO> ~/tp-dataviz
-cd ~/tp-dataviz
-
 ### Démarrer MySQL puis créer l’utilisateur pour l’exporter
 
+```
 docker compose up -d mysql
+```
 
 ***Attendre ~10s puis créer l'utilisateur pour l'exporter***
 
+```
 docker exec -it mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
 CREATE USER IF NOT EXISTS '${MYSQL_EXPORTER_USER}'@'%' IDENTIFIED BY '${MYSQL_EXPORTER_PASSWORD}';
 GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '${MYSQL_EXPORTER_USER}'@'%';
 FLUSH PRIVILEGES;
 "
+```
 
 ### 1) Démarrer la stack “métriques”
 
+```
 docker compose up -d prometheus grafana mysqld-exporter node-exporter-host node-exporter-node2
+```
 
 ### 2) Démarrer la stack “logs”
 
+```
 docker compose up -d loki promtail
+```
 
 ___
 
@@ -99,64 +102,88 @@ ___
 
 ### Voir l’état des conteneurs
 
+```
 docker compose ps
+```
 
 ### Logs d’un service si besoin
 
+```
 docker compose logs -f prometheus
+```
 
 ### Prometheus up ?
 
+```
 curl -sf http://localhost:9090/-/healthy && echo "Prometheus OK"
+```
 
 ### Cibles Prometheus (doivent être "UP")
 
+```
 curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[].health' | sort | uniq -c
+```
 
 ### Grafana accessible ?
 
+```
 curl -I http://localhost:3000 | head -n1
+```
 
 ### MySQL ping (via client dans le conteneur)
 
+```
 docker exec -it mysql mysql -utpuser -ptppass -e "SELECT 1;" tpdb
+```
 
 ### Node Exporter host
 
+```
 curl -s http://localhost:9100/metrics | head
+```
 
 ### 2e Node Exporter
 
+```
 curl -s http://localhost:9101/metrics | head
+```
 
 ### mysqld-exporter
 
+```
 curl -s http://localhost:9104/metrics | grep -E 'mysql_global_status|mysql_up' | head
+```
 
 ### Loki / labels connus
 
+```
 curl -s "http://localhost:3100/loki/api/v1/labels" | jq '.status'
+```
 
 ### Promtail web UI (metrics/targets)
 
+```
 curl -I http://localhost:9080
+```
 
 ### Vérifier les données persistantes via volumes : prom_data, grafana_data, mysql_data, loki_data
 
+```
 docker volume ls
+```
 
 ___
 
 ## Accès web
 
-Grafana → http://localhost:3000
+Grafana → <http://localhost:3000>
  (admin / admin)
 Datasources Prometheus et Loki déjà provisionnées.
 
-Prometheus → http://localhost:9090
+Prometheus → <http://localhost:9090>
  → Status → Targets : tout doit être UP.
 
-Loki (API) → http://localhost:3100/ready
+Loki (API) → <http://localhost:3100/ready>
 
 ___
 
@@ -164,8 +191,12 @@ ___
 
 ### Stopper
 
+```
 docker compose down
+```
 
 ### Tout remettre à zéro (⚠️ supprime les données)
 
+```
 docker compose down -v
+```

@@ -116,6 +116,26 @@ Le message sur allow_structured_metadata est déjà réglé (mis à false).
     ...
     directory: /loki/chunks           # <- remplace chunks_directory/rules_directory
 ```
+
+***À quoi sert sed -i 's/\r$//' loki/loki-config.yml ?***
+
+Sous Windows, certains fichiers sont enregistrés en CRLF (fin de ligne \r\n).  
+Beaucoup d’outils Linux (dont Loki) attendent des fins de ligne LF (\n) uniquement.
+
+La commande sed -i 's/\r$//' ... supprime le \r en fin de ligne → convertit CRLF → LF sans toucher au reste.
+
+C’est exactement ce qui empêchait Loki de parser la config.
+
+Rajout de ces commandes dans le script de déploiement :
+
+```
+echo
+echo "=== 🧼 Normalisation des fins de ligne (CRLF → LF) sur les configs Loki/Promtail ==="
+# Ces sed sont idempotents (sans effet si déjà en LF)
+sed -i 's/\r$//' loki/loki-config.yml || true
+sed -i 's/\r$//' loki/promtail-config.yml || true
+```
+
 ___
 
 ## Déploiement de tout le TP (script auto deploy.sh)

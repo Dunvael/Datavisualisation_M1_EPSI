@@ -49,6 +49,12 @@ SQL
 echo "✅ Utilisateur exporter configuré."
 
 echo
+echo "=== 🧼 Normalisation des fins de ligne (CRLF → LF) sur les configs Loki/Promtail ==="
+# Ces sed sont idempotents (sans effet si déjà en LF)
+sed -i 's/\r$//' loki/loki-config.yml || true
+sed -i 's/\r$//' loki/promtail-config.yml || true
+
+echo
 echo "=== 📊 Démarrage de la stack métriques + logs ==="
 docker compose up -d prometheus grafana mysqld-exporter node-exporter-host node-exporter-node2 loki promtail
 

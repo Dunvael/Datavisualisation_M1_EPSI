@@ -4,6 +4,24 @@ set -euo pipefail
 # 🚀 Script de déploiement complet du TP Dataviz
 # ─────────────────────────────────────────────
 
+# --- Localisation du .env et chargement des variables pour le SHELL ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/.env"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "❌ Fichier .env introuvable à la racine du projet : $ENV_FILE"
+  exit 1
+fi
+
+# Exporter toutes les variables définies dans .env
+set -a
+. "$ENV_FILE"
+set +a
+
+# Vérifier les variables indispensables
+: "${MYSQL_ROOT_PASSWORD:?Variable manquante dans .env}"
+: "${MYSQL_EXPORTER_USER:?Variable manquante dans .env}"
+: "${MYSQL_EXPORTER_PASSWORD:?Variable manquante dans .env}"
+
 echo "=== 📦 Téléchargement des images ==="
 docker compose pull
 

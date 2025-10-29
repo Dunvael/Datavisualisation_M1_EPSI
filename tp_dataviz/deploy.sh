@@ -68,7 +68,7 @@ fi
 GRAFANA_WAIT=0
 until curl -sf http://localhost:3000/api/health | grep -q '"database":"ok"'; do
   echo "⏳ Grafana pas encore prêt..."; sleep 2
-  GRAFANA_WAIT=$((GRAFANA_WAIT+2))
+  GRAFANA_WAIT=$((GRAFANA_WAIT+10))
   if [ "$GRAFANA_WAIT" -ge 60 ]; then
     echo "❌ Grafana KO (timeout). Regarde les logs: docker compose logs grafana"
     break
@@ -80,7 +80,7 @@ if [ "$GRAFANA_WAIT" -lt 60 ]; then echo "✅ Grafana OK"; fi
 LOKI_WAIT=0
 until curl -sf http://localhost:3100/ready >/dev/null; do
   echo "⏳ Loki pas encore prêt..."; sleep 2
-  LOKI_WAIT=$((LOKI_WAIT+2))
+  LOKI_WAIT=$((LOKI_WAIT+10))
   if [ "$LOKI_WAIT" -ge 60 ]; then
     echo "❌ Loki KO (timeout). Regarde les logs: docker compose logs loki"
     break

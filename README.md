@@ -66,7 +66,59 @@ Versions figées :
 
 ___
 
+## Déploiement de tout le TP (script auto deploy.sh)
+
+### 1. Télécharger images
+
+```
+docker compose pull
+```
+
+### 2. Démarrer MySQL
+
+```
+docker compose up -d mysql
+```
+
+### 3. Attendre qu’il soit prêt/disponibilité
+
+```
+until docker exec mysql mysqladmin ping -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; do echo "⏳"; sleep 2; done
+```
+
+### 4. Créer utilisateur exporter
+
+```
+cat <<SQL | docker exec -i mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD"
+CREATE USER IF NOT EXISTS '${MYSQL_EXPORTER_USER}'@'%' IDENTIFIED BY '${MYSQL_EXPORTER_PASSWORD}';
+GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '${MYSQL_EXPORTER_USER}'@'%';
+FLUSH PRIVILEGES;
+SQL
+```
+
+### 5. Démarrer tout le stack (métriques et logs)
+
+```
+docker compose up -d prometheus grafana mysqld-exporter node-exporter-host node-exporter-node2 loki promtail
+```
+
+### 6. Vérifier
+
+```
+docker compose ps
+curl -sf http://localhost:9090/-/healthy && echo "✅ Prometheus OK"
+curl -I http://localhost:3000 | head -n1
+curl -sf http://localhost:3100/ready && echo "✅ Loki OK"
+```
+___
+
 ## Commandes (déploiement)
+
+### Autorisations exécution du script automatique deploy.sh
+
+```
+chmod +x deploy.sh
+```
 
 ### Télécharger les images distantes aux bonnes versions (Optionnel mais recommandé)
 
@@ -158,11 +210,11 @@ curl -s http://localhost:9090/api/v1/targets
 curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[].health' | sort | uniq -c
 ```
 
-
-
 ### (Optionnel, avec jq pour sortie propre)
-curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, instance: .labels.instance, health: .health}'
 
+```
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, instance: .labels.instance, health: .health}'
+```
 
 ### Grafana accessible ?
 

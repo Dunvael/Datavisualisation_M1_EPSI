@@ -49,12 +49,17 @@ services:
   mysqld-exporter:
     image: prom/mysqld-exporter:v0.18.0
     container_name: mysqld-exporter
-    environment:
-      - DATA_SOURCE_NAME=${MYSQL_EXPORTER_USER}:${MYSQL_EXPORTER_PASSWORD}@(${MYSQL_HOST}:${MYSQL_PORT})/
-    depends_on: [mysql]
+    depends_on:
+      - mysql
+    command:
+      - '--mysqld.address=${MYSQL_HOST}:${MYSQL_PORT}'
+      - '--mysqld.username=${MYSQL_EXPORTER_USER}'
+      - '--mysqld.password=${MYSQL_EXPORTER_PASSWORD}'
     ports:
       - "9104:9104"
-    networks: [monitoring]
+    networks:
+      - monitoring
+    restart: unless-stopped
 
   # --- Node Exporter (hôte) ---
   node-exporter-host:
@@ -83,6 +88,7 @@ services:
     ports:
       - "9101:9100"
     networks: [monitoring]
+    restart: unless-stopped
 
   # --- Loki ---
   loki:

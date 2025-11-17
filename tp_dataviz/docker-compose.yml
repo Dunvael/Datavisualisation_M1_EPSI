@@ -83,8 +83,8 @@ services:
   node-exporter-node2:
     image: prom/node-exporter:v1.10.2
     container_name: node-exporter-node2
-    command:
-      - '--collector.disable-defaults=false'
+    # command:
+    #   - '--collector.disable-defaults=false'
     ports:
       - "9101:9100"
     networks: [monitoring]

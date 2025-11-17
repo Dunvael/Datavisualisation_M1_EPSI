@@ -136,7 +136,85 @@ sed -i 's/\r$//' loki/loki-config.yml || true
 sed -i 's/\r$//' loki/promtail-config.yml || true
 ```
 
-___
+### Problème de node "misbehaving"
+
+Sur GitHub, pour mysqld_exporter ≥ 0.15.0 : *“The exporter no longer supports the monolithic DATA_SOURCE_NAME environment variable… use my.cnf or command line arguments.”*
+
+👉 Conclusion : j'utilises l’image v0.18.0 mais elle n’interprète plus DATA_SOURCE_NAME.
+
+Comme aucune autre config n’est fournie, l’exporter essaie un .my.cnf par défaut → erreur → il plante → conteneur s’arrête →
+Prometheus n’arrive même plus à résoudre le nom mysqld-exporter → no such host / server misbehaving.
+
+**Correction pour mysqld-exporter** : Garder la version 0.18.0, mais changer la config pour utiliser les arguments CLI à la place de DATA_SOURCE_NAME.
+
+Dans le docker-compose.yml, remplacement du bloc :
+
+```
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.18.0
+    container_name: mysqld-exporter
+    environment:
+      - DATA_SOURCE_NAME=${MYSQL_EXPORTER_USER}:${MYSQL_EXPORTER_PASSWORD}@(${MYSQL_HOST}:${MYSQL_PORT})/
+    depends_on: [mysql]
+    ports:
+      - "9104:9104"
+    networks: [monitoring]
+```
+
+Par cd bloc :
+
+```
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.18.0
+    container_name: mysqld-exporter
+    depends_on:
+      - mysql
+    command:
+      - '--mysqld.address=${MYSQL_HOST}:${MYSQL_PORT}'
+      - '--mysqld.username=${MYSQL_EXPORTER_USER}'
+      - '--mysqld.password=${MYSQL_EXPORTER_PASSWORD}'
+    ports:
+      - "9104:9104"
+    networks:
+      - monitoring
+    restart: unless-stopped
+```
+
+On continue à utiliser les variables du fichier .env (MYSQL_HOST, MYSQL_PORT, MYSQL_EXPORTER_USER, MYSQL_EXPORTER_PASSWORD), mais cette fois correctement interprétées par l’exporter.
+
+Pour le node-exporter-node2 DOWN : Prometheus dit juste : *lookup node-exporter-node2 ... no such host*
+
+Donc le conteneur node-exporter-node2 n’est pas en cours d’exécution (ou a crash). Fiabilisation avec un restart :
+
+Dans docker-compose.yml, pour ce service :
+
+```
+  node-exporter-node2:
+    image: prom/node-exporter:v1.10.2
+    container_name: node-exporter-node2
+    command:
+      - '--collector.disable-defaults=false'
+    ports:
+      - "9101:9100"
+    networks: [monitoring]
+    restart: unless-stopped
+```
+
+Puis : 
+
+```
+# Recharger uniquement les services concernés
+docker compose up -d mysqld-exporter node-exporter-node2
+
+# Vérifier qu’ils tournent bien
+docker compose ps -a
+
+# Vérifier sur Prometheus
+curl -s http://localhost:9090/api/v1/targets | grep -E 'mysqld_exporter|node_exporter_node2'
+
+## Vérifier que l’exporter MySQL répond
+curl -s http://localhost:9104/metrics | head
+```
 
 ## Déploiement de tout le TP (script auto deploy.sh)
 

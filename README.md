@@ -145,7 +145,7 @@ Sur GitHub, pour mysqld_exporter ≥ 0.15.0 : *“The exporter no longer support
 Comme aucune autre config n’est fournie, l’exporter essaie un .my.cnf par défaut → erreur → il plante → conteneur s’arrête →
 Prometheus n’arrive même plus à résoudre le nom mysqld-exporter → no such host / server misbehaving.
 
-**Correction pour mysqld-exporter** : Garder la version 0.18.0, mais changer la config pour utiliser les arguments CLI à la place de DATA_SOURCE_NAME.
+**Correction pour mysqld-exporter** : Garder la version 0.18.0, mais changer la config pour utiliser les arguments CLI à la place de DATA_SOURCE_NAME. De plus, depuis la v0.15.0, le mot de passe doit être passé via la variable d’environnement MYSQLD_EXPORTER_PASSWORD, et les flags sont --mysqld.address et --mysqld.username
 
 Dans le docker-compose.yml, remplacement du bloc :
 
@@ -161,7 +161,7 @@ Dans le docker-compose.yml, remplacement du bloc :
     networks: [monitoring]
 ```
 
-Par cd bloc :
+Par ce bloc :
 
 ```
   mysqld-exporter:
@@ -169,10 +169,11 @@ Par cd bloc :
     container_name: mysqld-exporter
     depends_on:
       - mysql
+    environment:
+      - MYSQLD_EXPORTER_PASSWORD=${MYSQL_EXPORTER_PASSWORD}
     command:
       - '--mysqld.address=${MYSQL_HOST}:${MYSQL_PORT}'
       - '--mysqld.username=${MYSQL_EXPORTER_USER}'
-      - '--mysqld.password=${MYSQL_EXPORTER_PASSWORD}'
     ports:
       - "9104:9104"
     networks:
@@ -192,8 +193,8 @@ Dans docker-compose.yml, pour ce service :
   node-exporter-node2:
     image: prom/node-exporter:v1.10.2
     container_name: node-exporter-node2
-    command:
-      - '--collector.disable-defaults=false'
+#    command:
+#      - '--collector.disable-defaults=false'
     ports:
       - "9101:9100"
     networks: [monitoring]
@@ -214,6 +215,39 @@ curl -s http://localhost:9090/api/v1/targets | grep -E 'mysqld_exporter|node_exp
 
 ## Vérifier que l’exporter MySQL répond
 curl -s http://localhost:9104/metrics | head
+```
+
+**Problème mysqld-exporter** : il redémarre car la connexion MySQL échoue
+
+Le log disait clairement : *failed to validate config: no user specified
+Error parsing host config file .my.cnf*
+
+👉 Donc les variables d’environnement .env ne sont pas prises ou elles sont vides.
+
+Le fichier. env comprend bien les bonnes variables et correctement écrites et il est bien récupéré pendant le script deploy.sh.
+
+**Problème node-exporter-node2** : il redémarre car la commande est mauvaise
+
+J'utilises :
+
+```
+node-exporter-node2:
+  command:
+    - '--collector.disable-defaults=false'
+```
+
+Or cette option n’existe plus depuis node-exporter 1.3 → Le container crash immédiatement. 
+
+✔️ Je mets une commande vide (le node exporter fonctionne sans rien) :
+
+```
+node-exporter-node2:
+  image: prom/node-exporter:v1.10.2
+  container_name: node-exporter-node2
+  ports:
+    - "9101:9100"
+  networks: [monitoring]
+  restart: unless-stopped
 ```
 
 ## Déploiement de tout le TP (script auto deploy.sh)
@@ -322,6 +356,44 @@ docker compose up -d loki promtail
 ```
 docker compose up -d prometheus grafana mysqld-exporter node-exporter-host node-exporter-node2 loki promtail
 ```
+
+___
+
+![Loki prêt](../Images/Dataviz/loki_ready.png)
+
+-> Loki est complètement opérationnel, il charge les logs, et l’API répond correctement.
+Aucun redémarrage en boucle, et le montage de volumes fonctionne.
+
+![Prometheus status node OK](../Images/Dataviz/prometheus_ok.png)
+
+-> Prometheus scrape correctement toutes les métriques, y compris MySQL.
+Donc ton exporter reçoit maintenant les bons identifiants depuis le .env.
+Le problème "no user specified / .my.cnf not found" est réglé.
+
+**Tous les targets sont 1/1 UP** :
+
+* mysqld_exporter → 🟢 UP
+* node_exporter_host → 🟢 UP
+* node_exporter_node2 → 🟢 UP
+* prometheus → 🟢 UP
+
+![Grafana OK](../Images/Dataviz/grafana_ok.png)
+
+-> Grafana :
+
+* Loki (http://loki:3100)
+* Prometheus (http://prometheus:9090) (défaut)
+
+Ces sources sont actives, donc je peux :
+
+* créer un dashboard MySQL / Node / Host
+* explorer les logs via Loki
+
+✅ Déploiement complet terminé avec succès :  
+
+* Grafana → <http://localhost:3000> (admin / admin ou identifiants .env)  
+* Prometheus → <http://localhost:9090>  
+* Loki API → <http://localhost:3100/ready>  
 
 ___
 

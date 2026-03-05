@@ -11,8 +11,9 @@ services:
       - ./prometheus/rules:/etc/prometheus/rules:ro
       - prom_data:/prometheus
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT}:9090" # 9090:9090
     networks: [monitoring]
+    restart: unless-stopped
 
   # --- Grafana ---
   grafana:
@@ -27,9 +28,10 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards
       # - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT}:3000" # 3000:3000
     depends_on: [prometheus]
     networks: [monitoring]
+    restart: unless-stopped
 
   # --- MySQL (LTS 8.4.x) ---
   mysql:
@@ -43,8 +45,9 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - "${MYSQL_EXPOSED_PORT}:3306" # 3306:3306
     networks: [monitoring]
+    restart: unless-stopped
 
   # --- MySQL Exporter ---
   mysqld-exporter:
@@ -78,8 +81,9 @@ services:
       - '--path.rootfs=/rootfs'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     ports:
-      - "9100:9100"
+      - "${NODE_EXPORTER_HOST_PORT}:9100" # "9100:9100"
     networks: [monitoring]
+    restart: unless-stopped
 
   # --- Node Exporter (2e "nœud") ---
   node-exporter-node2:
@@ -88,7 +92,7 @@ services:
     # command:
     #   - '--collector.disable-defaults=false'
     ports:
-      - "9101:9100"
+      - "${NODE_EXPORTER_NODE2_PORT}:9100" # "9101:9100"
     networks: [monitoring]
     restart: unless-stopped
 
@@ -103,7 +107,7 @@ services:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
     ports:
-      - "9093:9093"
+      - "${ALERTMANAGER_PORT}:9093" # "9093:9093"
     networks: [monitoring]
     restart: unless-stopped
 
@@ -111,7 +115,7 @@ services:
     image: quay.io/brancz/prometheus-example-app:v0.3.0
     container_name: demo-app
     ports:
-      - "8080:8080"
+      - "${DEMO_APP_PORT}:8080" # "8080:8080"
     networks: [monitoring]
     restart: unless-stopped
 
@@ -124,8 +128,9 @@ services:
       - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki_data:/loki
     ports:
-      - "3100:3100"
+      - "${LOKI_PORT}:3100" # "3100:3100"
     networks: [monitoring]
+    restart: unless-stopped
 
   # --- Promtail ---
   promtail:
@@ -136,9 +141,10 @@ services:
       - ./loki/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
     ports:
-      - "9080:9080"
+      - "${PROMTAIL_PORT}:9080" # "9080:9080"
     networks: [monitoring]
     depends_on: [loki]
+    restart: unless-stopped
 
 networks:
   monitoring:

@@ -50,6 +50,7 @@ groups:
     for: 2m
     labels:
       severity: page
+      service: monitoring
       env: local
     annotations:
       summary: "Target Prometheus DOWN ({{ $labels.job }})"

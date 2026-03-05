@@ -14,7 +14,7 @@ scrape_configs:
       - targets: [localhost]
         labels:
           job: docker
-          host: ${HOSTNAME}
+          # host: ${HOSTNAME}
           __path__: /var/lib/docker/containers/*/*-json.log
 
     pipeline_stages:

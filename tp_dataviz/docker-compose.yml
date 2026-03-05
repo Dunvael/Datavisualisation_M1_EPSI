@@ -8,6 +8,7 @@ services:
       - --storage.tsdb.retention.time=15d
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
       - prom_data:/prometheus
     ports:
       - "9090:9090"
@@ -18,8 +19,8 @@ services:
     image: grafana/grafana:12.2.0
     container_name: grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER} # GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD} # GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -54,7 +55,7 @@ services:
     environment:
       - MYSQLD_EXPORTER_PASSWORD=${MYSQL_EXPORTER_PASSWORD}
     command:
-      - '--mysqld.address=${MYSQL_HOST}:${MYSQL_PORT}'
+      - '--mysqld.address=${MYSQL_HOST}:${MYSQL_PORT}' # '--mysqld.address=mysql:3306'
       - '--mysqld.username=${MYSQL_EXPORTER_USER}'
     ports:
       - "9104:9104"
@@ -91,6 +92,29 @@ services:
     networks: [monitoring]
     restart: unless-stopped
 
+  # --- Alertmanager ---
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks: [monitoring]
+    restart: unless-stopped
+
+  demo-app:
+    image: quay.io/brancz/prometheus-example-app:v0.3.0
+    container_name: demo-app
+    ports:
+      - "8080:8080"
+    networks: [monitoring]
+    restart: unless-stopped
+
   # --- Loki ---
   loki:
     image: grafana/loki:3.5.7
@@ -123,4 +147,5 @@ volumes:
   prom_data:
   grafana_data:
   mysql_data:
+  alertmanager_data:
   loki_data:

@@ -6,7 +6,7 @@ server:
 # Réglages communs + préfixe pour tous les chemins Loki dans le volume /loki
 common:
   path_prefix: /loki
-  instance_addr: 127.0.0.1
+  # instance_addr: 127.0.0.1
   storage:
     filesystem: {}        # OK pour 3.x
   ring:
@@ -37,4 +37,4 @@ schema_config:
         period: 24h
 
 ruler:
-  alertmanager_url: http://localhost:9093
+  alertmanager_url: http://alertmanager:9093

@@ -2,11 +2,11 @@ server:
   http_listen_port: 9080
   grpc_listen_port: 0
 
-clients:
-  - url: http://loki:3100/loki/api/v1/push
-
 positions:
   filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
   - job_name: docker-logs
@@ -14,6 +14,23 @@ scrape_configs:
       - targets: [localhost]
         labels:
           job: docker
+          host: ${HOSTNAME}
           __path__: /var/lib/docker/containers/*/*-json.log
+
     pipeline_stages:
+      # Parse du format JSON Docker: extrait timestamp + champ "log"
       - docker: {}
+
+      # Ajoute un label container_id à partir du chemin du fichier
+      # Exemple path: /var/lib/docker/containers/<id>/<id>-json.log
+      - regex:
+          source: filename
+          expression: '^/var/lib/docker/containers/(?P<container_id>[0-9a-f]{12,64})/.*\.log$'
+
+      - labels:
+          container_id:
+
+      # Nettoyage: retire les \n finaux dans les messages
+      - replace:
+          expression: '\n$'
+          replace: ''

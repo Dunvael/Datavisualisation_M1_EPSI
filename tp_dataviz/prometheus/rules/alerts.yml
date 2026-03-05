@@ -1,0 +1,57 @@
+groups:
+- name: demo-app-alerts
+  rules:
+  # 1) Symptom "métier" : taux d'erreurs élevé
+  - alert: DemoAppHighErrorRate
+    expr: demo_app:http_errors:ratio5m > 0.02
+    for: 5m
+    labels:
+      severity: page
+      service: demo-app
+      env: local
+    annotations:
+      summary: "Demo-app: taux d'erreur > 2% (5m)"
+      description: "Erreur ratio = {{ $value | humanizePercentage }}. Vérifier trafic, endpoints en top, et logs Loki."
+      runbook_url: "https://example.invalid/runbooks/demo-app-errors"
+      dashboard: "http://localhost:3000/d/demo-app-n1"
+
+  # 2) Symptom "métier" : latence p95 élevée
+  - alert: DemoAppHighLatencyP95
+    expr: demo_app:http_request_duration_seconds:p95_5m > 0.5
+    for: 10m
+    labels:
+      severity: ticket
+      service: demo-app
+      env: local
+    annotations:
+      summary: "Demo-app: p95 latence > 500ms (10m)"
+      description: "p95={{ $value }}s. Vérifier CPU/RAM, saturation, et corréler avec logs."
+      runbook_url: "https://example.invalid/runbooks/demo-app-latency"
+      dashboard: "http://localhost:3000/d/demo-app-n2"
+
+- name: infra-alerts
+  rules:
+  # 3) Saturation infra : CPU host trop haut
+  - alert: HostHighCPU
+    expr: (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 0.85
+    for: 15m
+    labels:
+      severity: ticket
+      service: host
+      env: local
+    annotations:
+      summary: "Host: CPU > 85% (15m)"
+      description: "CPU util={{ $value | humanizePercentage }}. Identifier process/containers (si tu ajoutes cAdvisor) et impact sur latence."
+      dashboard: "http://localhost:3000/d/infra-n2"
+
+  # 4) Qualité de collecte : target down
+  - alert: PrometheusTargetDown
+    expr: up{job=~"prometheus|demo_app|node_exporter_host|node_exporter_node2|mysqld_exporter"} == 0
+    for: 2m
+    labels:
+      severity: page
+      env: local
+    annotations:
+      summary: "Target Prometheus DOWN ({{ $labels.job }})"
+      description: "La cible ne scrape plus. Vérifier container, réseau docker, endpoint /metrics."
+      dashboard: "http://localhost:3000/d/infra-n1"

@@ -1,0 +1,43 @@
+groups:
+- name: demo-app-recording
+  interval: 15s
+  rules:
+  # Traffic (req/s)
+  - record: demo_app:http_requests:rate5m
+    expr: sum by (instance, handler, method, code) (rate(http_requests_total{job="demo_app"}[5m]))
+
+  - record: demo_app:http_requests:rate5m_total
+    expr: sum by (instance) (rate(http_requests_total{job="demo_app"}[5m]))
+
+  # Error ratio (4xx+5xx) / all
+  - record: demo_app:http_errors:ratio5m
+    expr: |
+      (
+        sum(rate(http_requests_total{job="demo_app",code=~"4..|5.."}[5m]))
+        /
+        clamp_min(sum(rate(http_requests_total{job="demo_app"}[5m])), 1e-9)
+      )
+
+  # Latency p95 global (SLO / vue N1)
+  - record: demo_app:http_request_duration_seconds:p95_5m
+    expr: |
+      histogram_quantile(
+        0.95,
+        sum by (le) (rate(http_request_duration_seconds_bucket{job="demo_app"}[5m]))
+      )
+
+  # Latency p95 par instance (diag / vue N2)
+  - record: demo_app:http_request_duration_seconds:p95_5m:by_instance
+    expr: |
+      histogram_quantile(
+        0.95,
+        sum by (le, instance) (rate(http_request_duration_seconds_bucket{job="demo_app"}[5m]))
+      )
+
+  # Latency p95 par endpoint (handler)
+  - record: demo_app:http_request_duration_seconds:p95_5m:by_handler
+    expr: |
+      histogram_quantile(
+        0.95,
+        sum by (le, handler) (rate(http_request_duration_seconds_bucket{job="demo_app"}[5m]))
+      )

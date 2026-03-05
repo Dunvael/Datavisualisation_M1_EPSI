@@ -3,6 +3,7 @@ set -euo pipefail
 
 # ─────────────────────────────────────────────
 # 🚀 Script de déploiement complet du TP Dataviz
+# (ports + secrets via .env)
 # ─────────────────────────────────────────────
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,24 +15,40 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
+# Charger .env dans le shell (utile pour les checks et les commandes)
 set -a
 . "$ENV_FILE"
 set +a
 
-# Vérifier les variables indispensables (secrets + config critique)
+# ─────────────────────────────────────────────
+# ✅ Vérifications variables indispensables
+# ─────────────────────────────────────────────
 : "${MYSQL_ROOT_PASSWORD:?Variable manquante dans .env}"
 : "${MYSQL_EXPORTER_USER:?Variable manquante dans .env}"
 : "${MYSQL_EXPORTER_PASSWORD:?Variable manquante dans .env}"
 : "${MYSQL_HOST:?Variable manquante dans .env}"
 : "${MYSQL_PORT:?Variable manquante dans .env}"
+: "${MYSQL_EXPOSED_PORT:?Variable manquante dans .env}"
+: "${MYSQL_EXPORTER_PORT:?Variable manquante dans .env}"
+
 : "${GRAFANA_ADMIN_USER:?Variable manquante dans .env}"
 : "${GRAFANA_ADMIN_PASSWORD:?Variable manquante dans .env}"
+: "${GRAFANA_PORT:?Variable manquante dans .env}"
+
+: "${PROMETHEUS_PORT:?Variable manquante dans .env}"
+: "${ALERTMANAGER_PORT:?Variable manquante dans .env}"
+: "${LOKI_PORT:?Variable manquante dans .env}"
+: "${PROMTAIL_PORT:?Variable manquante dans .env}"
+: "${DEMO_APP_PORT:?Variable manquante dans .env}"
+: "${NODE_EXPORTER_HOST_PORT:?Variable manquante dans .env}"
+: "${NODE_EXPORTER_NODE2_PORT:?Variable manquante dans .env}"
 
 echo "=== 📦 Téléchargement des images ==="
 docker compose pull
 
 echo
 echo "=== 🧼 Normalisation CRLF → LF sur les configs ==="
+# Idempotent (sans effet si déjà en LF)
 sed -i 's/\r$//' prometheus/prometheus.yml || true
 sed -i 's/\r$//' loki/loki-config.yml || true
 sed -i 's/\r$//' loki/promtail-config.yml || true
@@ -43,8 +60,10 @@ echo "=== 🗄️  Démarrage du service MySQL ==="
 docker compose up -d mysql
 
 echo
-echo "=== ⏳ Attente de la disponibilité de MySQL ==="
+echo "=== ⏳ Attente de la disponibilité de MySQL (port hôte: ${MYSQL_EXPOSED_PORT}) ==="
 until docker exec mysql mysqladmin ping -h 127.0.0.1 -P 3306 -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; do
+  # Note: depuis *le conteneur mysql*, c'est toujours 3306.
+  # Le port exposé hôte (${MYSQL_EXPOSED_PORT}) sert pour accès depuis ta machine.
   echo "⏳ MySQL n'est pas encore prêt..."; sleep 2
 done
 echo "✅ MySQL est prêt."
@@ -78,43 +97,63 @@ echo "=== 🔍 Vérification rapide : containers ==="
 docker compose ps
 
 echo
-echo "=== 🔍 Vérification rapide : endpoints ==="
+echo "=== 🔍 Vérification rapide : endpoints (ports hôte via .env) ==="
 
 # Prometheus
-curl -sf http://localhost:9090/-/healthy >/dev/null && echo "✅ Prometheus OK" || echo "❌ Prometheus KO"
+if curl -sf "http://localhost:${PROMETHEUS_PORT}/-/healthy" >/dev/null; then
+  echo "✅ Prometheus OK (http://localhost:${PROMETHEUS_PORT})"
+else
+  echo "❌ Prometheus KO (http://localhost:${PROMETHEUS_PORT})"
+fi
 
 # Alertmanager
-curl -sf http://localhost:9093/-/ready >/dev/null && echo "✅ Alertmanager OK" || echo "❌ Alertmanager KO"
+if curl -sf "http://localhost:${ALERTMANAGER_PORT}/-/ready" >/dev/null; then
+  echo "✅ Alertmanager OK (http://localhost:${ALERTMANAGER_PORT})"
+else
+  echo "❌ Alertmanager KO (http://localhost:${ALERTMANAGER_PORT})"
+fi
 
 # Demo app metrics
-curl -sf http://localhost:8080/metrics >/dev/null && echo "✅ Demo-app /metrics OK" || echo "❌ Demo-app KO"
+if curl -sf "http://localhost:${DEMO_APP_PORT}/metrics" >/dev/null; then
+  echo "✅ Demo-app /metrics OK (http://localhost:${DEMO_APP_PORT})"
+else
+  echo "❌ Demo-app KO (http://localhost:${DEMO_APP_PORT})"
+fi
 
-# Grafana health
+# Grafana /api/health
 GRAFANA_WAIT=0; GRAFANA_TIMEOUT=30
-until curl -sf http://localhost:3000/api/health | grep -q '"database":"ok"'; do
+until curl -sf "http://localhost:${GRAFANA_PORT}/api/health" | grep -q '"database":"ok"'; do
   echo "⏳ Grafana pas encore prêt..."; sleep 2; GRAFANA_WAIT=$((GRAFANA_WAIT+2))
   if [ "$GRAFANA_WAIT" -ge "$GRAFANA_TIMEOUT" ]; then
     echo "❌ Grafana KO (timeout ${GRAFANA_TIMEOUT}s). Logs: docker compose logs grafana"
     break
   fi
 done
-if [ "$GRAFANA_WAIT" -lt "$GRAFANA_TIMEOUT" ]; then echo "✅ Grafana OK"; fi
+if [ "$GRAFANA_WAIT" -lt "$GRAFANA_TIMEOUT" ]; then
+  echo "✅ Grafana OK (http://localhost:${GRAFANA_PORT})"
+fi
 
-# Loki ready
+# Loki /ready
 LOKI_WAIT=0; LOKI_TIMEOUT=30
-until curl -s -o /dev/null -w '%{http_code}' http://localhost:3100/ready | grep -q '^200$'; do
+until curl -s -o /dev/null -w '%{http_code}' "http://localhost:${LOKI_PORT}/ready" | grep -q '^200$'; do
   echo "⏳ Loki pas encore prêt..."; sleep 2; LOKI_WAIT=$((LOKI_WAIT+2))
   if [ "$LOKI_WAIT" -ge "$LOKI_TIMEOUT" ]; then
     echo "❌ Loki KO (timeout ${LOKI_TIMEOUT}s). Logs: docker compose logs loki"
     break
   fi
 done
-if [ "$LOKI_WAIT" -lt "$LOKI_TIMEOUT" ]; then echo "✅ Loki OK"; fi
+if [ "$LOKI_WAIT" -lt "$LOKI_TIMEOUT" ]; then
+  echo "✅ Loki OK (http://localhost:${LOKI_PORT})"
+fi
 
 echo
 echo "✅ Déploiement complet terminé !"
-echo "Grafana → http://localhost:3000 (user/pass: ${GRAFANA_ADMIN_USER})"
-echo "Prometheus → http://localhost:9090"
-echo "Alertmanager → http://localhost:9093"
-echo "Demo-app → http://localhost:8080 (metrics: /metrics)"
-echo "Loki → http://localhost:3100/ready"
+echo "Grafana      → http://localhost:${GRAFANA_PORT} (user: ${GRAFANA_ADMIN_USER})"
+echo "Prometheus   → http://localhost:${PROMETHEUS_PORT}"
+echo "Alertmanager → http://localhost:${ALERTMANAGER_PORT}"
+echo "Demo-app     → http://localhost:${DEMO_APP_PORT} (metrics: /metrics)"
+echo "Loki         → http://localhost:${LOKI_PORT}/ready"
+echo
+echo "ℹ️  Notes:"
+echo "- Les ports hôte sont configurables via .env."
+echo "- À l'intérieur du réseau Docker, les services utilisent leurs ports internes (ex: mysql:3306)."

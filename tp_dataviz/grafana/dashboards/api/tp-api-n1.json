@@ -4,7 +4,7 @@
   "tags": ["tp", "api", "n1"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 4,
+  "version": 5,
   "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
@@ -58,7 +58,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max(up{job=\"demo_app\",instance=\"$instance\"}) or vector(0)"
+          "expr": "max(up{job=\"demo_app\",instance=\"$instance\"}) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -71,13 +71,6 @@
                 "1": { "text": "UP", "color": "green" }
               }
             }
-          ],
-          "links": [
-            {
-              "title": "Open API Diagnostic",
-              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-              "targetBlank": false
-            }
           ]
         },
         "overrides": []
@@ -89,14 +82,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "auto"
-      },
-      "links": [
-        {
-          "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-          "targetBlank": false
-        }
-      ]
+      }
     },
     {
       "type": "stat",
@@ -107,20 +93,11 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(clamp_min(demo_app:http_requests:rate5m_total{instance=\"$instance\"}, 0)) or vector(0)"
+          "expr": "sum(clamp_min(demo_app:http_requests:rate5m_total{instance=\"$instance\"}, 0)) or on() vector(0)"
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "links": [
-            {
-              "title": "Open API Diagnostic",
-              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-              "targetBlank": false
-            }
-          ]
-        },
+        "defaults": { "unit": "reqps" },
         "overrides": []
       },
       "options": {
@@ -130,14 +107,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      },
-      "links": [
-        {
-          "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-          "targetBlank": false
-        }
-      ]
+      }
     },
     {
       "type": "stat",
@@ -148,7 +118,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(clamp_min(demo_app:http_errors:ratio5m, 0) or vector(0)) * 100"
+          "expr": "(clamp_min(demo_app:http_errors:ratio5m, 0) or on() vector(0)) * 100"
         }
       ],
       "fieldConfig": {
@@ -161,14 +131,7 @@
               { "color": "orange", "value": 2 },
               { "color": "red", "value": 5 }
             ]
-          },
-          "links": [
-            {
-              "title": "Investigate Errors",
-              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-              "targetBlank": false
-            }
-          ]
+          }
         },
         "overrides": []
       },
@@ -179,14 +142,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      },
-      "links": [
-        {
-          "title": "Investigate Errors",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-          "targetBlank": false
-        }
-      ]
+      }
     },
     {
       "type": "stat",
@@ -197,7 +153,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(clamp_min(demo_app:http_request_duration_seconds:p95_5m, 0) or vector(0)) * 1000"
+          "expr": "(clamp_min(demo_app:http_request_duration_seconds:p95_5m, 0) or on() vector(0)) * 1000"
         }
       ],
       "fieldConfig": {
@@ -210,14 +166,7 @@
               { "color": "orange", "value": 300 },
               { "color": "red", "value": 500 }
             ]
-          },
-          "links": [
-            {
-              "title": "Investigate Latency",
-              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-              "targetBlank": false
-            }
-          ]
+          }
         },
         "overrides": []
       },
@@ -228,14 +177,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      },
-      "links": [
-        {
-          "title": "Investigate Latency",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-          "targetBlank": false
-        }
-      ]
+      }
     },
     {
       "type": "stat",
@@ -246,7 +188,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "clamp_min(100 - (avg by(instance) (rate(node_cpu_seconds_total{job=~\"node_exporter_host|node_exporter_node2\",mode=\"idle\",instance=\"$node_instance\"}[5m])) * 100), 0) or vector(0)"
+          "expr": "clamp_min(100 - (avg by(instance) (rate(node_cpu_seconds_total{job=~\"node_exporter_host|node_exporter_node2\",mode=\"idle\",instance=\"$node_instance\"}[5m])) * 100), 0) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -259,14 +201,7 @@
               { "color": "orange", "value": 70 },
               { "color": "red", "value": 85 }
             ]
-          },
-          "links": [
-            {
-              "title": "Open API Diagnostic",
-              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-              "targetBlank": false
-            }
-          ]
+          }
         },
         "overrides": []
       },
@@ -277,94 +212,23 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      },
-      "links": [
-        {
-          "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-          "targetBlank": false
-        }
-      ]
+      }
     },
     {
-      "type": "timeseries",
-      "title": "Traffic",
-      "description": "Évolution temporelle du trafic applicatif.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(clamp_min(demo_app:http_requests:rate5m_total{instance=\"$instance\"}, 0)) or vector(0)"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "links": [
-            {
-              "title": "Open API Diagnostic",
-              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-              "targetBlank": false
-            }
-          ]
-        },
-        "overrides": []
-      },
+      "type": "text",
+      "title": "Open Diagnostic Dashboard",
+      "description": "Lien explicite vers le dashboard N2.",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "single", "sort": "none" }
-      },
-      "links": [
-        {
-          "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-          "targetBlank": false
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Latency p95",
-      "description": "Évolution temporelle de la latence p95 globale.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m, 0) or vector(0)"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "links": [
-            {
-              "title": "Investigate Latency",
-              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-              "targetBlank": false
-            }
-          ]
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "single", "sort": "none" }
-      },
-      "links": [
-        {
-          "title": "Investigate Latency",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-          "targetBlank": false
-        }
-      ]
+        "mode": "markdown",
+        "content": "[👉 Ouvrir le dashboard N2]( /d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance} )"
+      }
     },
     {
       "type": "table",
       "title": "Top Slow Endpoints",
       "description": "Top 5 des handlers les plus lents, point d’entrée de diagnostic.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
@@ -375,45 +239,13 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
-          "links": [
-            {
-              "title": "Open API Diagnostic",
-              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-              "targetBlank": false
-            }
-          ]
+          "unit": "s"
         },
         "overrides": []
       },
       "options": {
         "showHeader": true,
         "footer": { "show": false }
-      },
-      "links": [
-        {
-          "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
-          "targetBlank": false
-        }
-      ]
-    },
-    {
-      "type": "logs",
-      "title": "Recent API-related Logs",
-      "description": "Logs corrélés API pour un premier niveau d’analyse.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "{job=\"docker\"} |= \"demo\""
-        }
-      ],
-      "options": {
-        "showTime": true,
-        "wrapLogMessage": true,
-        "enableLogDetails": true
       },
       "links": [
         {

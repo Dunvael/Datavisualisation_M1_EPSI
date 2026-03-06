@@ -4,7 +4,7 @@
   "tags": ["tp", "api", "n1"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
@@ -71,6 +71,13 @@
                 "1": { "text": "UP", "color": "green" }
               }
             }
+          ],
+          "links": [
+            {
+              "title": "Open API Diagnostic",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
           ]
         },
         "overrides": []
@@ -86,7 +93,7 @@
       "links": [
         {
           "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]
@@ -104,7 +111,16 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "reqps" },
+        "defaults": {
+          "unit": "reqps",
+          "links": [
+            {
+              "title": "Open API Diagnostic",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
+        },
         "overrides": []
       },
       "options": {
@@ -118,7 +134,7 @@
       "links": [
         {
           "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]
@@ -145,7 +161,14 @@
               { "color": "orange", "value": 2 },
               { "color": "red", "value": 5 }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Investigate Errors",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
         },
         "overrides": []
       },
@@ -160,7 +183,7 @@
       "links": [
         {
           "title": "Investigate Errors",
-          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]
@@ -187,7 +210,14 @@
               { "color": "orange", "value": 300 },
               { "color": "red", "value": 500 }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Investigate Latency",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
         },
         "overrides": []
       },
@@ -202,7 +232,7 @@
       "links": [
         {
           "title": "Investigate Latency",
-          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]
@@ -229,7 +259,14 @@
               { "color": "orange", "value": 70 },
               { "color": "red", "value": 85 }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Open API Diagnostic",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
         },
         "overrides": []
       },
@@ -244,7 +281,7 @@
       "links": [
         {
           "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]
@@ -262,13 +299,29 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "reqps" },
+        "defaults": {
+          "unit": "reqps",
+          "links": [
+            {
+              "title": "Open API Diagnostic",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
+        },
         "overrides": []
       },
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "single", "sort": "none" }
-      }
+      },
+      "links": [
+        {
+          "title": "Open API Diagnostic",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
       "type": "timeseries",
@@ -283,13 +336,29 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "s" },
+        "defaults": {
+          "unit": "s",
+          "links": [
+            {
+              "title": "Investigate Latency",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
+        },
         "overrides": []
       },
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "single", "sort": "none" }
-      }
+      },
+      "links": [
+        {
+          "title": "Investigate Latency",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
       "type": "table",
@@ -305,7 +374,16 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "s" },
+        "defaults": {
+          "unit": "s",
+          "links": [
+            {
+              "title": "Open API Diagnostic",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
+        },
         "overrides": []
       },
       "options": {
@@ -315,7 +393,7 @@
       "links": [
         {
           "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]
@@ -340,7 +418,7 @@
       "links": [
         {
           "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]

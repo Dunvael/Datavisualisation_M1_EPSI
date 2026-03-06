@@ -1,10 +1,10 @@
 {
   "uid": "tp-api-n2",
   "title": "TP – API Diagnostic",
-  "tags": ["tp", "api", "diagnostic"],
+  "tags": ["tp", "api", "diagnostic", "n2"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
@@ -52,17 +52,26 @@
     {
       "type": "timeseries",
       "title": "Latency p95 by Instance",
-      "description": "Vue détaillée de la latence p95 par instance API.",
+      "description": "Latence p95 par instance applicative.",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
-          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_instance, 0) or vector(0)",
-          "refId": "A"
+          "refId": "A",
+          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_instance, 0) or vector(0)"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "s" },
+        "defaults": {
+          "unit": "s",
+          "links": [
+            {
+              "title": "Open in Explore (Prometheus)",
+              "url": "/explore?left=%5B%22now-6h%22,%22now%22,%22${DS_PROM}%22,%7B%22queries%22:%5B%7B%22expr%22:%22demo_app:http_request_duration_seconds:p95_5m:by_instance%22,%22refId%22:%22A%22%7D%5D%7D%5D",
+              "targetBlank": false
+            }
+          ]
+        },
         "overrides": []
       },
       "options": {
@@ -73,17 +82,26 @@
     {
       "type": "timeseries",
       "title": "Latency p95 by Endpoint",
-      "description": "Vue détaillée de la latence p95 par handler/endpoint.",
+      "description": "Latence p95 par handler/endpoint.",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
-          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0) or vector(0)",
-          "refId": "A"
+          "refId": "A",
+          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0) or vector(0)"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "s" },
+        "defaults": {
+          "unit": "s",
+          "links": [
+            {
+              "title": "Open in Explore (Prometheus)",
+              "url": "/explore?left=%5B%22now-6h%22,%22now%22,%22${DS_PROM}%22,%7B%22queries%22:%5B%7B%22expr%22:%22demo_app:http_request_duration_seconds:p95_5m:by_handler%22,%22refId%22:%22A%22%7D%5D%7D%5D",
+              "targetBlank": false
+            }
+          ]
+        },
         "overrides": []
       },
       "options": {
@@ -99,12 +117,21 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
-          "expr": "clamp_min(sum by(handler) (rate(http_requests_total{job=\"demo_app\",code=~\"4..|5..\"}[5m])), 0) or vector(0)",
-          "refId": "A"
+          "refId": "A",
+          "expr": "clamp_min(sum by(handler) (rate(http_requests_total{job=\"demo_app\",code=~\"4..|5..\"}[5m])), 0) or vector(0)"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "reqps" },
+        "defaults": {
+          "unit": "reqps",
+          "links": [
+            {
+              "title": "Open in Explore (Prometheus)",
+              "url": "/explore?left=%5B%22now-6h%22,%22now%22,%22${DS_PROM}%22,%7B%22queries%22:%5B%7B%22expr%22:%22sum%20by(handler)%20(rate(http_requests_total%7Bjob%3D%5C%22demo_app%5C%22,code%3D~%5C%224..%7C5..%5C%22%7D%5B5m%5D))%22,%22refId%22:%22A%22%7D%5D%7D%5D",
+              "targetBlank": false
+            }
+          ]
+        },
         "overrides": []
       },
       "options": {
@@ -120,8 +147,8 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
-          "expr": "sum by(code) (rate(http_requests_total{job=\"demo_app\"}[5m])) or vector(0)",
-          "refId": "A"
+          "refId": "A",
+          "expr": "sum by(code) (rate(http_requests_total{job=\"demo_app\"}[5m])) or vector(0)"
         }
       ],
       "fieldConfig": {
@@ -232,7 +259,7 @@
     {
       "type": "stat",
       "title": "Current Error Ratio %",
-      "description": "Ratio erreurs actuel, utile pendant l’investigation.",
+      "description": "Ratio erreurs actuel pendant l’investigation.",
       "gridPos": { "h": 5, "w": 6, "x": 18, "y": 24 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -269,15 +296,22 @@
       "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
       "targets": [
         {
-          "expr": "{job=\"docker\"} |= \"demo\"",
-          "refId": "A"
+          "refId": "A",
+          "expr": "{job=\"docker\"} |= \"demo\""
         }
       ],
       "options": {
         "showTime": true,
         "wrapLogMessage": true,
         "enableLogDetails": true
-      }
+      },
+      "links": [
+        {
+          "title": "Open in Explore (Loki)",
+          "url": "/explore?left=%5B%22now-6h%22,%22now%22,%22${DS_LOKI}%22,%7B%22queries%22:%5B%7B%22expr%22:%22%7Bjob%3D%5C%22docker%5C%22%7D%20%7C%3D%20%5C%22demo%5C%22%22,%22refId%22:%22A%22,%22queryType%22:%22range%22%7D%5D%7D%5D",
+          "targetBlank": false
+        }
+      ]
     },
     {
       "type": "logs",
@@ -287,15 +321,22 @@
       "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
       "targets": [
         {
-          "expr": "{job=\"docker\"} |= \"error\"",
-          "refId": "A"
+          "refId": "A",
+          "expr": "{job=\"docker\"} |= \"error\""
         }
       ],
       "options": {
         "showTime": true,
         "wrapLogMessage": true,
         "enableLogDetails": true
-      }
+      },
+      "links": [
+        {
+          "title": "Open in Explore (Loki)",
+          "url": "/explore?left=%5B%22now-6h%22,%22now%22,%22${DS_LOKI}%22,%7B%22queries%22:%5B%7B%22expr%22:%22%7Bjob%3D%5C%22docker%5C%22%7D%20%7C%3D%20%5C%22error%5C%22%22,%22refId%22:%22A%22,%22queryType%22:%22range%22%7D%5D%7D%5D",
+          "targetBlank": false
+        }
+      ]
     }
   ]
 }

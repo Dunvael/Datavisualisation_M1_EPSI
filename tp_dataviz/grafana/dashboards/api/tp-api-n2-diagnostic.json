@@ -1,0 +1,76 @@
+{
+  "uid": "tp-api-n2",
+  "title": "TP – API Diagnostic",
+  "tags": ["tp", "api", "diagnostic"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
+
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "DS_PROM",
+        "query": "prometheus",
+        "current": { "selected": true }
+      },
+      {
+        "type": "datasource",
+        "name": "DS_LOKI",
+        "query": "loki",
+        "current": { "selected": true }
+      }
+    ]
+  },
+
+  "panels": [
+
+    {
+      "type": "timeseries",
+      "title": "Latency p95 by Instance",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        { "expr": "demo_app:http_request_duration_seconds:p95_5m:by_instance", "refId": "A" }
+      ]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Latency p95 by Endpoint",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        { "expr": "demo_app:http_request_duration_seconds:p95_5m:by_handler", "refId": "A" }
+      ]
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Errors by Endpoint",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "expr": "sum by(handler) (rate(http_requests_total{job=\"demo_app\",code=~\"4..|5..\"}[5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "logs",
+      "title": "API Logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        {
+          "expr": "{job=\"docker\"} |= \"demo\"",
+          "refId": "A"
+        }
+      ]
+    }
+
+  ]
+}

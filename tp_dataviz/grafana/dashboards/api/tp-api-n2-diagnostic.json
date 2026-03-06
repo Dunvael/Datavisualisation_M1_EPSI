@@ -4,7 +4,7 @@
   "tags": ["tp", "api", "diagnostic", "n2"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 4,
+  "version": 5,
   "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
@@ -50,6 +50,7 @@
   },
   "panels": [
     {
+      "id": 1,
       "type": "timeseries",
       "title": "Latency p95 by Instance",
       "description": "Latence p95 par instance applicative.",
@@ -58,7 +59,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_instance, 0) or vector(0)"
+          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_instance, 0) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -80,6 +81,7 @@
       }
     },
     {
+      "id": 2,
       "type": "timeseries",
       "title": "Latency p95 by Endpoint",
       "description": "Latence p95 par handler/endpoint.",
@@ -88,7 +90,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0) or vector(0)"
+          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -110,6 +112,7 @@
       }
     },
     {
+      "id": 3,
       "type": "timeseries",
       "title": "Errors by Endpoint",
       "description": "Taux d’erreurs par endpoint pour identifier la route fautive.",
@@ -118,7 +121,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "clamp_min(sum by(handler) (rate(http_requests_total{job=\"demo_app\",code=~\"4..|5..\"}[5m])), 0) or vector(0)"
+          "expr": "clamp_min(sum by(handler) (rate(http_requests_total{job=\"demo_app\",code=~\"4..|5..\"}[5m])), 0) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -140,6 +143,7 @@
       }
     },
     {
+      "id": 4,
       "type": "timeseries",
       "title": "Request Rate by Status Code",
       "description": "Répartition du trafic par code HTTP.",
@@ -148,7 +152,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by(code) (rate(http_requests_total{job=\"demo_app\"}[5m])) or vector(0)"
+          "expr": "sum by(code) (rate(http_requests_total{job=\"demo_app\"}[5m])) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -161,6 +165,7 @@
       }
     },
     {
+      "id": 5,
       "type": "stat",
       "title": "Host CPU %",
       "description": "Saturation CPU du node sélectionné.",
@@ -169,7 +174,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "clamp_min(100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=\"$node_instance\"}[5m])) * 100), 0) or vector(0)"
+          "expr": "clamp_min(100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=\"$node_instance\"}[5m])) * 100), 0) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -193,6 +198,7 @@
       }
     },
     {
+      "id": 6,
       "type": "stat",
       "title": "Host Memory %",
       "description": "Utilisation mémoire du node sélectionné.",
@@ -201,7 +207,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "((1 - (node_memory_MemAvailable_bytes{instance=\"$node_instance\"} / node_memory_MemTotal_bytes{instance=\"$node_instance\"})) * 100) or vector(0)"
+          "expr": "((1 - (node_memory_MemAvailable_bytes{instance=\"$node_instance\"} / node_memory_MemTotal_bytes{instance=\"$node_instance\"})) * 100) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -225,6 +231,7 @@
       }
     },
     {
+      "id": 7,
       "type": "stat",
       "title": "API UP",
       "description": "État instantané de l’instance API sélectionnée.",
@@ -233,7 +240,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max(up{job=\"demo_app\",instance=\"$instance\"}) or vector(0)"
+          "expr": "max(up{job=\"demo_app\",instance=\"$instance\"}) or on() vector(0)"
         }
       ],
       "fieldConfig": {
@@ -257,6 +264,7 @@
       }
     },
     {
+      "id": 8,
       "type": "stat",
       "title": "Current Error Ratio %",
       "description": "Ratio erreurs actuel pendant l’investigation.",
@@ -265,7 +273,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(clamp_min(demo_app:http_errors:ratio5m, 0) or vector(0)) * 100"
+          "expr": "(clamp_min(demo_app:http_errors:ratio5m, 0) or on() vector(0)) * 100"
         }
       ],
       "fieldConfig": {
@@ -289,6 +297,7 @@
       }
     },
     {
+      "id": 9,
       "type": "logs",
       "title": "API Logs",
       "description": "Logs API généralistes pour corrélation métriques ↔ événements.",
@@ -314,6 +323,7 @@
       ]
     },
     {
+      "id": 10,
       "type": "logs",
       "title": "API Error Logs",
       "description": "Logs d’erreurs filtrés pour accélérer le diagnostic.",

@@ -4,11 +4,10 @@
   "tags": ["tp", "api", "n1"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
-
   "templating": {
     "list": [
       {
@@ -16,31 +15,50 @@
         "name": "DS_PROM",
         "label": "Prometheus",
         "query": "prometheus",
-        "current": { "selected": true }
+        "current": { "selected": true, "text": "Prometheus" }
+      },
+      {
+        "type": "datasource",
+        "name": "DS_LOKI",
+        "label": "Loki",
+        "query": "loki",
+        "current": { "selected": true, "text": "Loki" }
       },
       {
         "type": "query",
         "name": "instance",
-        "label": "Instance",
+        "label": "API instance",
         "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
         "query": "label_values(up{job=\"demo_app\"}, instance)",
         "refresh": 1,
         "includeAll": false,
-        "multi": false
+        "multi": false,
+        "current": { "selected": true }
+      },
+      {
+        "type": "query",
+        "name": "node_instance",
+        "label": "Node instance",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "query": "label_values(node_uname_info, instance)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": { "selected": true }
       }
     ]
   },
-
   "panels": [
     {
       "type": "stat",
       "title": "API UP",
+      "description": "Disponibilité de la cible applicative sélectionnée.",
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "up{job=\"demo_app\",instance=\"$instance\"} or vector(0)"
+          "expr": "max(up{job=\"demo_app\",instance=\"$instance\"}) or vector(0)"
         }
       ],
       "fieldConfig": {
@@ -64,11 +82,19 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "auto"
-      }
+      },
+      "links": [
+        {
+          "title": "Open API Diagnostic",
+          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
       "type": "stat",
       "title": "Traffic (req/s)",
+      "description": "Débit applicatif calculé à partir de la recording rule de trafic.",
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -88,11 +114,19 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      }
+      },
+      "links": [
+        {
+          "title": "Open API Diagnostic",
+          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
       "type": "stat",
       "title": "Error Ratio %",
+      "description": "Ratio erreurs 4xx/5xx sur la fenêtre 5m.",
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -122,11 +156,19 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      }
+      },
+      "links": [
+        {
+          "title": "Investigate Errors",
+          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
       "type": "stat",
       "title": "Latency p95 (ms)",
+      "description": "Latence p95 globale de l’API, utile pour le SLI/SLO.",
       "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -156,17 +198,25 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      }
+      },
+      "links": [
+        {
+          "title": "Investigate Latency",
+          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
       "type": "stat",
       "title": "Host CPU %",
+      "description": "Corrélation saturation CPU hôte ↔ latence API.",
       "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "clamp_min(100 - (avg(rate(node_cpu_seconds_total{job=\"node_exporter_host\",mode=\"idle\"}[5m])) * 100), 0) or vector(0)"
+          "expr": "clamp_min(100 - (avg by(instance) (rate(node_cpu_seconds_total{job=~\"node_exporter_host|node_exporter_node2\",mode=\"idle\",instance=\"$node_instance\"}[5m])) * 100), 0) or vector(0)"
         }
       ],
       "fieldConfig": {
@@ -190,11 +240,19 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      }
+      },
+      "links": [
+        {
+          "title": "Open API Diagnostic",
+          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
       "type": "timeseries",
       "title": "Traffic",
+      "description": "Évolution temporelle du trafic applicatif.",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -215,6 +273,7 @@
     {
       "type": "timeseries",
       "title": "Latency p95",
+      "description": "Évolution temporelle de la latence p95 globale.",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -235,12 +294,14 @@
     {
       "type": "table",
       "title": "Top Slow Endpoints",
+      "description": "Top 5 des handlers les plus lents, point d’entrée de diagnostic.",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "topk(5, clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0))"
+          "expr": "topk(5, clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0))",
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -254,7 +315,7 @@
       "links": [
         {
           "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2",
+          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]
@@ -262,8 +323,9 @@
     {
       "type": "logs",
       "title": "Recent API-related Logs",
+      "description": "Logs corrélés API pour un premier niveau d’analyse.",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "loki", "uid": "Loki" },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
       "targets": [
         {
           "refId": "A",
@@ -274,7 +336,14 @@
         "showTime": true,
         "wrapLogMessage": true,
         "enableLogDetails": true
-      }
+      },
+      "links": [
+        {
+          "title": "Open API Diagnostic",
+          "url": "/d/tp-api-n2?var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     }
   ]
 }

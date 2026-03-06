@@ -1,10 +1,10 @@
 {
   "uid": "tp-stack-overview",
   "title": "TP – Stack Overview",
-  "tags": ["tp", "mysql", "node", "loki"],
+  "tags": ["tp", "mysql", "node", "loki", "infra"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
@@ -15,14 +15,14 @@
         "name": "DS_PROM",
         "label": "Prometheus",
         "query": "prometheus",
-        "current": { "selected": true }
+        "current": { "selected": true, "text": "Prometheus" }
       },
       {
         "type": "datasource",
         "name": "DS_LOKI",
         "label": "Loki",
         "query": "loki",
-        "current": { "selected": true }
+        "current": { "selected": true, "text": "Loki" }
       },
       {
         "type": "query",
@@ -45,156 +45,209 @@
     ]
   },
   "panels": [
-    { "type": "row", "title": "Health", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "collapsed": false, "panels": [] },
-
+    {
+      "type": "row",
+      "title": "Health",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
     {
       "type": "stat",
       "title": "MySQL Up",
+      "description": "Disponibilité de l’exporter MySQL sélectionné.",
       "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [{ "refId": "A", "expr": "mysql_up{instance=\"$mysql_instance\"}" }],
+      "targets": [
+        { "refId": "A", "expr": "max(mysql_up{instance=\"$mysql_instance\"}) or vector(0)" }
+      ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "DOWN", "color": "red" },
+                "1": { "text": "UP", "color": "green" }
+              }
+            }
           ]
         },
         "overrides": []
       },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
     },
-
     {
       "type": "stat",
       "title": "Threads Connected",
+      "description": "Nombre courant de connexions MySQL actives.",
       "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [{ "refId": "A", "expr": "mysql_global_status_threads_connected{instance=\"$mysql_instance\"}" }],
+      "targets": [
+        { "refId": "A", "expr": "mysql_global_status_threads_connected{instance=\"$mysql_instance\"} or vector(0)" }
+      ],
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
-
     {
       "type": "stat",
       "title": "QPS (rate)",
+      "description": "Débit MySQL en queries par seconde.",
       "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [{ "refId": "A", "expr": "rate(mysql_global_status_queries{instance=\"$mysql_instance\"}[5m])" }],
+      "targets": [
+        { "refId": "A", "expr": "rate(mysql_global_status_queries{instance=\"$mysql_instance\"}[5m]) or vector(0)" }
+      ],
       "fieldConfig": { "defaults": { "unit": "qps" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
-
     {
       "type": "stat",
       "title": "Slow Queries (rate)",
+      "description": "Débit de slow queries sur la fenêtre 5m.",
       "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [{ "refId": "A", "expr": "rate(mysql_global_status_slow_queries{instance=\"$mysql_instance\"}[5m])" }],
-      "fieldConfig": { "defaults": { "unit": "ops" } }
+      "targets": [
+        { "refId": "A", "expr": "rate(mysql_global_status_slow_queries{instance=\"$mysql_instance\"}[5m]) or vector(0)" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
-
     {
       "type": "gauge",
       "title": "InnoDB Buffer Pool Hit Ratio",
+      "description": "Efficacité du buffer pool InnoDB.",
       "gridPos": { "h": 5, "w": 8, "x": 16, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "(1 - (mysql_global_status_innodb_buffer_pool_reads{instance=\"$mysql_instance\"} / ignoring() mysql_global_status_innodb_buffer_pool_read_requests{instance=\"$mysql_instance\"})) * 100"
+          "expr": "((1 - (mysql_global_status_innodb_buffer_pool_reads{instance=\"$mysql_instance\"} / ignoring() mysql_global_status_innodb_buffer_pool_read_requests{instance=\"$mysql_instance\"})) * 100) or vector(0)"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "percent", "min": 0, "max": 100,
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": 0 }, { "color": "yellow", "value": 95 }, { "color": "green", "value": 99 }] }
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 95 },
+              { "color": "green", "value": 99 }
+            ]
+          }
         }
       }
     },
-
-    { "type": "row", "title": "MySQL – Throughput & Activity", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 }, "collapsed": false, "panels": [] },
-
+    {
+      "type": "row",
+      "title": "MySQL – Throughput & Activity",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "collapsed": false,
+      "panels": []
+    },
     {
       "type": "timeseries",
       "title": "Connections (rate)",
+      "description": "Évolution du rythme de nouvelles connexions.",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [{ "refId": "A", "expr": "rate(mysql_global_status_connections{instance=\"$mysql_instance\"}[5m])" }],
+      "targets": [
+        { "refId": "A", "expr": "rate(mysql_global_status_connections{instance=\"$mysql_instance\"}[5m]) or vector(0)" }
+      ],
       "fieldConfig": { "defaults": { "unit": "ops" } }
     },
-
     {
       "type": "timeseries",
       "title": "Questions vs Queries (rate)",
+      "description": "Comparaison du débit Questions / Queries.",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
-        { "refId": "A", "expr": "rate(mysql_global_status_questions{instance=\"$mysql_instance\"}[5m])" },
-        { "refId": "B", "expr": "rate(mysql_global_status_queries{instance=\"$mysql_instance\"}[5m])" }
+        { "refId": "A", "expr": "rate(mysql_global_status_questions{instance=\"$mysql_instance\"}[5m]) or vector(0)" },
+        { "refId": "B", "expr": "rate(mysql_global_status_queries{instance=\"$mysql_instance\"}[5m]) or vector(0)" }
       ],
       "fieldConfig": { "defaults": { "unit": "qps" } }
     },
-
-    { "type": "row", "title": "Host – Node Exporter", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 }, "collapsed": false, "panels": [] },
-
+    {
+      "type": "row",
+      "title": "Host – Node Exporter",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "collapsed": false,
+      "panels": []
+    },
     {
       "type": "stat",
       "title": "CPU Usage %",
+      "description": "Utilisation CPU du node sélectionné.",
       "gridPos": { "h": 5, "w": 6, "x": 0, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=\"$node_instance\"}[5m])) * 100)"
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=\"$node_instance\"}[5m])) * 100)"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "percent" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" }
     },
-
     {
       "type": "stat",
       "title": "Memory Used %",
+      "description": "Taux d’utilisation mémoire du node sélectionné.",
       "gridPos": { "h": 5, "w": 6, "x": 6, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "(1 - node_memory_MemAvailable_bytes{instance=\"$node_instance\"} / node_memory_MemTotal_bytes{instance=\"$node_instance\"}) * 100"
+          "expr": "((1 - node_memory_MemAvailable_bytes{instance=\"$node_instance\"} / node_memory_MemTotal_bytes{instance=\"$node_instance\"}) * 100) or vector(0)"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "percent" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
-
     {
       "type": "stat",
       "title": "Load (1m)",
+      "description": "Load average 1 minute du node sélectionné.",
       "gridPos": { "h": 5, "w": 4, "x": 12, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [{ "refId": "A", "expr": "node_load1{instance=\"$node_instance\"}" }],
+      "targets": [
+        { "refId": "A", "expr": "node_load1{instance=\"$node_instance\"} or vector(0)" }
+      ],
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
-
     {
       "type": "stat",
       "title": "Disk Used %",
+      "description": "Occupation disque du node sélectionné hors tmpfs/overlay/squashfs.",
       "gridPos": { "h": 5, "w": 6, "x": 16, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "(1 - (node_filesystem_avail_bytes{instance=\"$node_instance\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{instance=\"$node_instance\",fstype!~\"tmpfs|overlay|squashfs\"})) * 100"
+          "expr": "((1 - (node_filesystem_avail_bytes{instance=\"$node_instance\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{instance=\"$node_instance\",fstype!~\"tmpfs|overlay|squashfs\"})) * 100) or vector(0))"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "percent" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
-
-    { "type": "row", "title": "Logs – Loki", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 }, "collapsed": false, "panels": [] },
-
+    {
+      "type": "row",
+      "title": "Logs – Loki",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "collapsed": false,
+      "panels": []
+    },
     {
       "type": "logs",
       "title": "Docker logs (mysql/prometheus/grafana)",
+      "description": "Logs infrastructure utiles pour corrélation rapide.",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
       "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
       "targets": [

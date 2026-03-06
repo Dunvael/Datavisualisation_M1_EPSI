@@ -4,11 +4,10 @@
   "tags": ["tp", "api", "diagnostic"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
-
   "templating": {
     "list": [
       {
@@ -16,22 +15,44 @@
         "name": "DS_PROM",
         "label": "Prometheus",
         "query": "prometheus",
-        "current": { "selected": true }
+        "current": { "selected": true, "text": "Prometheus" }
       },
       {
         "type": "datasource",
         "name": "DS_LOKI",
         "label": "Loki",
         "query": "loki",
+        "current": { "selected": true, "text": "Loki" }
+      },
+      {
+        "type": "query",
+        "name": "instance",
+        "label": "API instance",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "query": "label_values(up{job=\"demo_app\"}, instance)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": { "selected": true }
+      },
+      {
+        "type": "query",
+        "name": "node_instance",
+        "label": "Node instance",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+        "query": "label_values(node_uname_info, instance)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
         "current": { "selected": true }
       }
     ]
   },
-
   "panels": [
     {
       "type": "timeseries",
       "title": "Latency p95 by Instance",
+      "description": "Vue détaillée de la latence p95 par instance API.",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -52,6 +73,7 @@
     {
       "type": "timeseries",
       "title": "Latency p95 by Endpoint",
+      "description": "Vue détaillée de la latence p95 par handler/endpoint.",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -72,6 +94,7 @@
     {
       "type": "timeseries",
       "title": "Errors by Endpoint",
+      "description": "Taux d’erreurs par endpoint pour identifier la route fautive.",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -92,6 +115,7 @@
     {
       "type": "timeseries",
       "title": "Request Rate by Status Code",
+      "description": "Répartition du trafic par code HTTP.",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -110,9 +134,138 @@
       }
     },
     {
+      "type": "stat",
+      "title": "Host CPU %",
+      "description": "Saturation CPU du node sélectionné.",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "clamp_min(100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=\"$node_instance\"}[5m])) * 100), 0) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "orange", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Host Memory %",
+      "description": "Utilisation mémoire du node sélectionné.",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((1 - (node_memory_MemAvailable_bytes{instance=\"$node_instance\"} / node_memory_MemTotal_bytes{instance=\"$node_instance\"})) * 100) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "orange", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "API UP",
+      "description": "État instantané de l’instance API sélectionnée.",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(up{job=\"demo_app\",instance=\"$instance\"}) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "DOWN", "color": "red" },
+                "1": { "text": "UP", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Current Error Ratio %",
+      "description": "Ratio erreurs actuel, utile pendant l’investigation.",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(clamp_min(demo_app:http_errors:ratio5m, 0) or vector(0)) * 100"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "orange", "value": 2 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
       "type": "logs",
       "title": "API Logs",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
+      "description": "Logs API généralistes pour corrélation métriques ↔ événements.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 29 },
       "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
       "targets": [
         {
@@ -129,7 +282,8 @@
     {
       "type": "logs",
       "title": "API Error Logs",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 34 },
+      "description": "Logs d’erreurs filtrés pour accélérer le diagnostic.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 39 },
       "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
       "targets": [
         {

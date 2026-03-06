@@ -4,7 +4,7 @@
   "tags": ["tp", "api", "n1"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 6,
   "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
@@ -50,9 +50,10 @@
   },
   "panels": [
     {
+      "id": 101,
       "type": "stat",
       "title": "API UP",
-      "description": "Disponibilité de la cible applicative sélectionnée.",
+      "description": "Disponibilité de la cible applicative sélectionnée. Drilldown vers le panel N2 API UP.",
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -71,6 +72,13 @@
                 "1": { "text": "UP", "color": "green" }
               }
             }
+          ],
+          "links": [
+            {
+              "title": "Voir le détail disponibilité (N2)",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=7&var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
           ]
         },
         "overrides": []
@@ -82,12 +90,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "auto"
-      }
+      },
+      "links": [
+        {
+          "title": "Voir le détail disponibilité (N2)",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=7&var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
+      "id": 102,
       "type": "stat",
       "title": "Traffic (req/s)",
-      "description": "Débit applicatif calculé à partir de la recording rule de trafic.",
+      "description": "Débit applicatif calculé à partir de la recording rule de trafic. Drilldown vers le détail du trafic en N2.",
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -97,7 +113,16 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "reqps" },
+        "defaults": {
+          "unit": "reqps",
+          "links": [
+            {
+              "title": "Voir le détail trafic (N2)",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=4&var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
+        },
         "overrides": []
       },
       "options": {
@@ -107,12 +132,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      }
+      },
+      "links": [
+        {
+          "title": "Voir le détail trafic (N2)",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=4&var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
+      "id": 103,
       "type": "stat",
       "title": "Error Ratio %",
-      "description": "Ratio erreurs 4xx/5xx sur la fenêtre 5m.",
+      "description": "Ratio erreurs 4xx/5xx sur la fenêtre 5m. Drilldown vers le détail des erreurs en N2.",
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -131,7 +164,14 @@
               { "color": "orange", "value": 2 },
               { "color": "red", "value": 5 }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Voir le détail erreurs (N2)",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=3&var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
         },
         "overrides": []
       },
@@ -142,12 +182,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      }
+      },
+      "links": [
+        {
+          "title": "Voir le détail erreurs (N2)",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=3&var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
+      "id": 104,
       "type": "stat",
       "title": "Latency p95 (ms)",
-      "description": "Latence p95 globale de l’API, utile pour le SLI/SLO.",
+      "description": "Latence p95 globale de l’API. Drilldown vers la latence détaillée par endpoint en N2.",
       "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -166,7 +214,14 @@
               { "color": "orange", "value": 300 },
               { "color": "red", "value": 500 }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Voir le détail latence (N2)",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=2&var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
         },
         "overrides": []
       },
@@ -177,12 +232,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      }
+      },
+      "links": [
+        {
+          "title": "Voir le détail latence (N2)",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=2&var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
+      "id": 105,
       "type": "stat",
       "title": "Host CPU %",
-      "description": "Corrélation saturation CPU hôte ↔ latence API.",
+      "description": "Corrélation saturation CPU hôte ↔ latence API. Drilldown vers le panel CPU en N2.",
       "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -201,7 +264,14 @@
               { "color": "orange", "value": 70 },
               { "color": "red", "value": 85 }
             ]
-          }
+          },
+          "links": [
+            {
+              "title": "Voir le détail CPU hôte (N2)",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=5&var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
         },
         "overrides": []
       },
@@ -212,22 +282,31 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "textMode": "value_and_name"
-      }
+      },
+      "links": [
+        {
+          "title": "Voir le détail CPU hôte (N2)",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=5&var-instance=${instance}&var-node_instance=${node_instance}",
+          "targetBlank": false
+        }
+      ]
     },
     {
+      "id": 106,
       "type": "text",
       "title": "Open Diagnostic Dashboard",
-      "description": "Lien explicite vers le dashboard N2.",
+      "description": "Lien explicite vers le dashboard N2 complet.",
       "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
       "options": {
         "mode": "markdown",
-        "content": "[👉 Ouvrir le dashboard N2]( /d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance} )"
+        "content": "[👉 Ouvrir le dashboard N2 complet](/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance})"
       }
     },
     {
+      "id": 107,
       "type": "table",
       "title": "Top Slow Endpoints",
-      "description": "Top 5 des handlers les plus lents, point d’entrée de diagnostic.",
+      "description": "Top 5 des handlers les plus lents. Drilldown vers la vue N2 des endpoints lents.",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
@@ -239,7 +318,14 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s"
+          "unit": "s",
+          "links": [
+            {
+              "title": "Voir le détail endpoints lents (N2)",
+              "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=2&var-instance=${instance}&var-node_instance=${node_instance}",
+              "targetBlank": false
+            }
+          ]
         },
         "overrides": []
       },
@@ -249,8 +335,8 @@
       },
       "links": [
         {
-          "title": "Open API Diagnostic",
-          "url": "/d/tp-api-n2/tp-api-diagnostic?var-instance=${instance}&var-node_instance=${node_instance}",
+          "title": "Voir le détail endpoints lents (N2)",
+          "url": "/d/tp-api-n2/tp-api-diagnostic?viewPanel=2&var-instance=${instance}&var-node_instance=${node_instance}",
           "targetBlank": false
         }
       ]

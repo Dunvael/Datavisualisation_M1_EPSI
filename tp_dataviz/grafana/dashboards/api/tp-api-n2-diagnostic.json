@@ -2,8 +2,10 @@
   "uid": "tp-api-n2",
   "title": "TP – API Diagnostic",
   "tags": ["tp", "api", "diagnostic"],
+  "timezone": "",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
+  "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
 
@@ -12,12 +14,14 @@
       {
         "type": "datasource",
         "name": "DS_PROM",
+        "label": "Prometheus",
         "query": "prometheus",
         "current": { "selected": true }
       },
       {
         "type": "datasource",
         "name": "DS_LOKI",
+        "label": "Loki",
         "query": "loki",
         "current": { "selected": true }
       }
@@ -25,27 +29,46 @@
   },
 
   "panels": [
-
     {
       "type": "timeseries",
       "title": "Latency p95 by Instance",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
-        { "expr": "demo_app:http_request_duration_seconds:p95_5m:by_instance", "refId": "A" }
-      ]
+        {
+          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_instance, 0) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
     },
-
     {
       "type": "timeseries",
       "title": "Latency p95 by Endpoint",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
-        { "expr": "demo_app:http_request_duration_seconds:p95_5m:by_handler", "refId": "A" }
-      ]
+        {
+          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
     },
-
     {
       "type": "timeseries",
       "title": "Errors by Endpoint",
@@ -53,24 +76,72 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
-          "expr": "sum by(handler) (rate(http_requests_total{job=\"demo_app\",code=~\"4..|5..\"}[5m]))",
+          "expr": "clamp_min(sum by(handler) (rate(http_requests_total{job=\"demo_app\",code=~\"4..|5..\"}[5m])), 0) or vector(0)",
           "refId": "A"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
     },
-
+    {
+      "type": "timeseries",
+      "title": "Request Rate by Status Code",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "expr": "sum by(code) (rate(http_requests_total{job=\"demo_app\"}[5m])) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    },
     {
       "type": "logs",
       "title": "API Logs",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
       "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
       "targets": [
         {
           "expr": "{job=\"docker\"} |= \"demo\"",
           "refId": "A"
         }
-      ]
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      }
+    },
+    {
+      "type": "logs",
+      "title": "API Error Logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 34 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        {
+          "expr": "{job=\"docker\"} |= \"error\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      }
     }
-
   ]
 }

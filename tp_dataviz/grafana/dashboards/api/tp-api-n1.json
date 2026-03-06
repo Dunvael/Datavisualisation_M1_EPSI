@@ -2,8 +2,10 @@
   "uid": "tp-api-n1",
   "title": "TP – API Service Overview",
   "tags": ["tp", "api", "n1"],
+  "timezone": "",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
+  "editable": true,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
 
@@ -22,20 +24,24 @@
         "label": "Instance",
         "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
         "query": "label_values(up{job=\"demo_app\"}, instance)",
-        "refresh": 1
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
       }
     ]
   },
 
   "panels": [
-
     {
       "type": "stat",
       "title": "API UP",
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
-        { "refId": "A", "expr": "up{job=\"demo_app\",instance=\"$instance\"}" }
+        {
+          "refId": "A",
+          "expr": "up{job=\"demo_app\",instance=\"$instance\"} or vector(0)"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -48,30 +54,52 @@
               }
             }
           ]
-        }
+        },
+        "overrides": []
       },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto"
+      }
     },
-
     {
       "type": "stat",
       "title": "Traffic (req/s)",
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
-        { "refId": "A", "expr": "demo_app:http_requests:rate5m_total" }
+        {
+          "refId": "A",
+          "expr": "sum(clamp_min(demo_app:http_requests:rate5m_total{instance=\"$instance\"}, 0)) or vector(0)"
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "reqps" } },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      }
     },
-
     {
       "type": "stat",
       "title": "Error Ratio %",
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
-        { "refId": "A", "expr": "demo_app:http_errors:ratio5m * 100" }
+        {
+          "refId": "A",
+          "expr": "(clamp_min(demo_app:http_errors:ratio5m, 0) or vector(0)) * 100"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -84,53 +112,169 @@
               { "color": "red", "value": 5 }
             ]
           }
-        }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name"
       }
     },
-
     {
       "type": "stat",
       "title": "Latency p95 (ms)",
       "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
-        { "refId": "A", "expr": "demo_app:http_request_duration_seconds:p95_5m * 1000" }
+        {
+          "refId": "A",
+          "expr": "(clamp_min(demo_app:http_request_duration_seconds:p95_5m, 0) or vector(0)) * 1000"
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "ms" } }
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "orange", "value": 300 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      }
     },
-
     {
-      "type": "timeseries",
-      "title": "Traffic",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [
-        { "refId": "A", "expr": "demo_app:http_requests:rate5m_total" }
-      ]
-    },
-
-    {
-      "type": "timeseries",
-      "title": "Latency p95",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
-      "targets": [
-        { "refId": "A", "expr": "demo_app:http_request_duration_seconds:p95_5m" }
-      ]
-    },
-
-    {
-      "type": "table",
-      "title": "Top Slow Endpoints",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
+      "type": "stat",
+      "title": "Host CPU %",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "topk(5, demo_app:http_request_duration_seconds:p95_5m:by_handler)"
+          "expr": "clamp_min(100 - (avg(rate(node_cpu_seconds_total{job=\"node_exporter_host\",mode=\"idle\"}[5m])) * 100), 0) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "orange", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Traffic",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(clamp_min(demo_app:http_requests:rate5m_total{instance=\"$instance\"}, 0)) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p95",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "clamp_min(demo_app:http_request_duration_seconds:p95_5m, 0) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Top Slow Endpoints",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(5, clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false }
+      },
+      "links": [
+        {
+          "title": "Open API Diagnostic",
+          "url": "/d/tp-api-n2",
+          "targetBlank": false
         }
       ]
+    },
+    {
+      "type": "logs",
+      "title": "Recent API-related Logs",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{job=\"docker\"} |= \"demo\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      }
     }
-
   ]
 }

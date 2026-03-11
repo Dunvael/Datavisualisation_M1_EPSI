@@ -1,5 +1,69 @@
 # Datavisualisation_M1_EPSI
 
+___
+
+## 🧱 Architecture du projet
+Ce projet met en place une stack d’observabilité complète basée sur :
+
+- **Prometheus** → collecte des métriques
+- **Grafana** → visualisation des métriques et logs
+- **Loki** → agrégation des logs
+- **Promtail** → collecte des logs des conteneurs
+- **Node Exporter** → métriques système
+- **mysqld_exporter** → métriques MySQL
+- **Alertmanager** → gestion des alertes
+
+___
+
+## Sommaire
+
+* Architecture du projet
+* Structure du repository
+* Détails des dossiers
+* Volumes Docker
+* Déploiement
+* Vérifications
+* Accès aux interfaces
+* Nettoyage
+
+___
+
+Stack d’observabilité :
+
+```
+Application / MySQL
+        │
+        ▼
+Exporters
+(node_exporter / mysqld_exporter)
+        │
+        ▼
+Prometheus
+(scraping métriques)
+        │
+        ├── Alertmanager (gestion alertes)
+        │
+        ▼
+Grafana
+(dashboards & visualisation)
+        │
+        ▼
+Logs
+Promtail → Loki → Grafana
+```
+
+Cette architecture permet de superviser une infrastructure complète :
+
+* métriques système
+* métriques base de données
+* logs applicatifs
+* dashboards Grafana
+* alerting Prometheus
+
+___
+
+## Structure du repository
+
 ```
 Datavisualisation_M1_EPSI/
 │
@@ -42,21 +106,32 @@ Datavisualisation_M1_EPSI/
 
 ___
 
-## 📁 Détails de chaque dossier
+### 📁 Détails de chaque dossier
 
-| Dossier / Fichier                                    | Rôle                                                                                                      |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **docker-compose.yml**                               | Le fichier principal : définit tous les services Docker, leurs ports, volumes, dépendances, réseaux, etc. |
-| **prometheus/prometheus.yml**                        | Configuration de Prometheus : quels exporters scraper, intervalle, etc.                                   |
-| **grafana/provisioning/datasources/datasources.yml** | Auto-provisioning des connexions Grafana (Prometheus et Loki).                                            |
-| **loki/loki-config.yml** *(optionnel)*               | Configuration du moteur de logs Loki.                                                                     |
-| **loki/promtail-config.yml** *(optionnel)*           | Configuration de Promtail pour collecter les logs Docker.                                                 |
-| **logs/** *(optionnel)*                              | Redirige les logs de services ou de tests manuels.                                          |
-| **README.md**                                        | Notes du TP, commandes utiles, etc.                                                                   |
+| Dossier / Fichier                                    | Rôle                                                                             |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **tp_dataviz/**                                      | Dossier principal contenant toute la stack d’observabilité.                      |
+| **.gitignore**                                       | Empêche certains fichiers locaux d’être poussés sur GitHub.                      |
+| **docker-compose.yml**                               | Définit tous les services Docker (Prometheus, Grafana, Loki, MySQL, exporters…). |
+| **deploy.sh**                                        | Script automatisé pour déployer toute la stack.                                  |
+| **resolution_erreurs.md**                            | Notes et procédures de résolution d’erreurs rencontrées pendant le TP.           |
+| **alertmanager/alertmanager.yml**                    | Configuration d’Alertmanager pour gérer les alertes Prometheus.                  |
+| **prometheus/prometheus.yml**                        | Configuration principale de Prometheus : scraping des métriques.                 |
+| **prometheus/rules/alerts.yml**                      | Règles d’alerte Prometheus (CPU, MySQL down, etc.).                              |
+| **prometheus/rules/recording.yml**                   | Recording rules Prometheus pour optimiser les requêtes.                          |
+| **grafana/provisioning/datasources/datasources.yml** | Datasources Grafana configurées automatiquement (Prometheus et Loki).            |
+| **grafana/provisioning/dashboards/dashboards.yml**   | Chargement automatique des dashboards Grafana.                                   |
+| **grafana/dashboards/**                              | Dashboards Grafana versionnés dans le projet.                                    |
+| **grafana/dashboards/infra/tp-stack-overview.json**  | Dashboard principal affichant l’état global de l’infrastructure.                 |
+| **loki/loki-config.yml**                             | Configuration du moteur de logs Loki.                                            |
+| **loki/promtail-config.yml**                         | Configuration de Promtail pour collecter les logs Docker.                        |
+| **README.md**                                        | Documentation complète du projet.                                                |
+| **projet_grafana.pdf**                               | Documentation du projet et présentation du TP.                                   |
+
 
 ___
 
-## 💾 Volumes persistants créés par Docker
+## 💾 Volumes persistants Docker
 
 | Volume         | Contenu persisté                         | Monté où ?         |
 | -------------- | ---------------------------------------- | ------------------ |
@@ -82,7 +157,7 @@ Versions figées :
 
 ___
 
-## Déploiement de tout le TP (script auto deploy.sh)
+## Déploiement du projet (script auto deploy.sh)
 
 ### 1. Télécharger images
 
@@ -223,7 +298,7 @@ Ces sources sont actives, donc je peux :
 
 ✅ Déploiement complet terminé avec succès :  
 
-* Grafana → <http://localhost:3000> (admin / admin ou identifiants .env)  
+* Grafana → <http://localhost:3000> (identifiants .env)  
 * Prometheus → <http://localhost:9090>  
 * Loki API → <http://localhost:3100/ready>  
 
@@ -320,28 +395,25 @@ docker volume ls
 
 ___
 
-## Accès web
+## Accès aux interfaces
 
-Grafana → <http://localhost:3000>
- (admin / admin)
-Datasources Prometheus et Loki déjà provisionnées.
-
-Prometheus → <http://localhost:9090>
- → Status → Targets : tout doit être UP.
-
-Loki (API) → <http://localhost:3100/ready>
+| Service    | URL                                                        |
+| ---------- | ---------------------------------------------------------- |
+| Grafana    | [http://localhost:3000](http://localhost:3000)             |
+| Prometheus | [http://localhost:9090](http://localhost:9090)             |
+| Loki API   | [http://localhost:3100/ready](http://localhost:3100/ready) |
 
 ___
 
 ## Nettoyage / persistance
 
-### Stopper
+### Stopper les conteneurs
 
 ```Bash
 docker compose down
 ```
 
-### Tout remettre à zéro (⚠️ supprime les données)
+### Tout remettre à zéro (⚠️ Supprimer aussi les volumes)
 
 ```Bash
 docker compose down -v

@@ -1,27 +1,43 @@
 # Datavisualisation_M1_EPSI
 
 ```
-tp-dataviz/
+Datavisualisation_M1_EPSI/
 │
-├── .gitignore
+├── tp_dataviz/
+│   │
+│   ├── .gitignore
+│   ├── deploy.sh
+│   ├── docker-compose.yml
+│   ├── resolution_erreurs.md
+│   │
+│   ├── alertmanager/
+│   │   └── alertmanager.yml
+│   │
+│   ├── grafana/
+│   │   │
+│   │   ├── dashboards/
+│   │   │   ├── api/
+│   │   │   └── infra/
+│   │   │       └── tp-stack-overview.json
+│   │   │
+│   │   └── provisioning/
+│   │       ├── dashboards/
+│   │       │   └── dashboards.yml
+│   │       └── datasources/
+│   │           └── datasources.yml
+│   │
+│   ├── loki/
+│   │   ├── loki-config.yml
+│   │   └── promtail-config.yml
+│   │
+│   └── prometheus/
+│       ├── prometheus.yml
+│       └── rules/
+│           ├── alerts.yml
+│           └── recording.yml
 │
-├── docker-compose.yml
-│
-├── prometheus/
-│   └── prometheus.yml
-│
-├── grafana/
-│   └── provisioning/
-│       └── datasources/
-│           └── datasources.yml
-│
-├── loki/                       
-│   ├── loki-config.yml
-│   └── promtail-config.yml
-│
-├── logs/                       
-│
-└── README.md                  
+├── README.md
+└── projet_grafana.pdf                
 ```
 
 ___

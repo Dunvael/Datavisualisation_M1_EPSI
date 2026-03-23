@@ -314,44 +314,6 @@ docker compose up -d prometheus grafana mysqld-exporter node-exporter-host node-
 
 ___
 
-![Loki prêt](../Images/Dataviz/loki_ready.png)
-
--> Loki est complètement opérationnel, il charge les logs, et l’API répond correctement.
-Aucun redémarrage en boucle, et le montage de volumes fonctionne.
-
-![Prometheus status node OK](../Images/Dataviz/prometheus_ok.png)
-
--> Prometheus scrape correctement toutes les métriques, y compris MySQL.
-Donc ton exporter reçoit maintenant les bons identifiants depuis le .env.
-Le problème "no user specified / .my.cnf not found" est réglé.
-
-**Tous les targets sont 1/1 UP** :
-
-* mysqld_exporter → 🟢 UP
-* node_exporter_host → 🟢 UP
-* node_exporter_node2 → 🟢 UP
-* prometheus → 🟢 UP
-
-![Grafana OK](../Images/Dataviz/grafana_ok.png)
-
--> Grafana :
-
-* Loki (http://loki:3100)
-* Prometheus (http://prometheus:9090) (défaut)
-
-Ces sources sont actives, donc je peux :
-
-* créer un dashboard MySQL / Node / Host
-* explorer les logs via Loki
-
-✅ Déploiement complet terminé avec succès :  
-
-* Grafana → <http://localhost:3000> (identifiants .env)  
-* Prometheus → <http://localhost:9090>  
-* Loki API → <http://localhost:3100/ready>  
-
-___
-
 ## Vérifications rapides
 
 ### Voir l’état des conteneurs

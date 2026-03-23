@@ -9,7 +9,7 @@ echo "==> Nom du conteneur : ${CONTAINER_NAME}"
 
 docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 
-docker run --rm --name "${CONTAINER_NAME}" "${IMAGE}" /bin/sh -c '
+MSYS_NO_PATHCONV=1 docker run --rm --name "${CONTAINER_NAME}" "${IMAGE}" //bin/sh -c '
 i=1
 while [ $i -le 30 ]; do
   ts=$(date -Iseconds)

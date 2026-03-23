@@ -1,36 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONTAINER_NAME="loki-incident-generator"
+CONTAINER_NAME="loki-incident-realistic"
 IMAGE="alpine:3.20"
 
-echo "==> Génération d'un incident de test pour Loki"
-echo "==> Nom du conteneur : ${CONTAINER_NAME}"
+echo "==> Simulation d'un incident applicatif réaliste"
 
 docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 
-MSYS_NO_PATHCONV=1 docker run --rm --name "${CONTAINER_NAME}" "${IMAGE}" //bin/sh -c '
-i=1
-while [ $i -le 30 ]; do
-  ts=$(date -Iseconds)
+MSYS_NO_PATHCONV=1 docker run --rm \
+--name "${CONTAINER_NAME}" \
+"${IMAGE}" //bin/sh -c '
 
-  echo "$ts INFO incident=test service=demo-app message=\"Démarrage du scénario d incident Loki\""
-  sleep 1
+echo "INFO Starting demo-app service"
 
-  echo "$ts WARN incident=test service=demo-app message=\"Montée anormale de la latence détectée\""
-  sleep 1
+sleep 2
 
-  echo "$ts ERROR incident=test service=demo-app code=500 message=\"Echec connexion base MySQL simulé\""
-  sleep 1
+echo "WARN High response time detected"
 
-  echo "$ts ERROR incident=test service=demo-app code=503 message=\"Service temporairement indisponible\""
-  sleep 1
+sleep 2
 
-  echo "$ts WARN incident=test service=demo-app message=\"Tentative de reprise automatique\""
-  sleep 1
+echo "ERROR Database connection failed"
 
-  i=$((i+1))
-done
+sleep 2
 
-echo "$(date -Iseconds) INFO incident=test service=demo-app message=\"Fin du scénario de test Loki\""
+echo "ERROR Timeout while calling external API"
+
+sleep 2
+
+echo "ERROR Stacktrace:"
+echo "java.lang.RuntimeException: Database unreachable"
+echo "    at com.example.Service.connect(Service.java:42)"
+echo "    at com.example.Controller.handle(Controller.java:15)"
+
+sleep 2
+
+echo "INFO Attempting recovery"
+
+sleep 2
+
+echo "INFO Service restored"
+
 '

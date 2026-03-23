@@ -2,6 +2,20 @@
 
 ___
 
+## Sommaire
+
+* Architecture du projet
+* Structure du repository
+* Détails des dossiers
+* Volumes Docker
+* Diagramme d'architecture
+* Déploiement
+* Vérifications
+* Accès aux interfaces
+* Nettoyage
+
+___
+
 ## 🧱 Architecture du projet
 Ce projet met en place une stack d’observabilité complète basée sur :
 
@@ -12,21 +26,6 @@ Ce projet met en place une stack d’observabilité complète basée sur :
 - **Node Exporter** → métriques système
 - **mysqld_exporter** → métriques MySQL
 - **Alertmanager** → gestion des alertes
-
-___
-
-## Sommaire
-
-* Architecture du projet
-* Structure du repository
-* Détails des dossiers
-* Volumes Docker
-* Déploiement
-* Vérifications
-* Accès aux interfaces
-* Nettoyage
-
-___
 
 Stack d’observabilité :
 
@@ -128,7 +127,6 @@ ___
 | **README.md**                                        | Documentation complète du projet.                                                |
 | **projet_grafana.pdf**                               | Documentation du projet et présentation du TP.                                   |
 
-
 ___
 
 ## 💾 Volumes persistants Docker
@@ -139,6 +137,69 @@ ___
 | `grafana_data` | Dashboards, datasources, comptes Grafana | `/var/lib/grafana` |
 | `mysql_data`   | Données MySQL (tables, users, etc.)      | `/var/lib/mysql`   |
 | `loki_data`    | Logs stockés par Loki                    | `/loki`            |
+
+___
+
+## Diagramme d'architecture
+
+flowchart TB
+
+subgraph Infrastructure
+    MYSQL[(MySQL Database)]
+end
+
+subgraph Exporters
+    NODE1[node_exporter_host]
+    NODE2[node_exporter_node2]
+    MYSQL_EXP[mysqld_exporter]
+end
+
+subgraph Monitoring
+    PROM[Prometheus]
+    ALERT[Alertmanager]
+end
+
+subgraph Logs
+    PROMTAIL[Promtail]
+    LOKI[Loki]
+end
+
+subgraph Visualization
+    GRAFANA[Grafana Dashboards]
+end
+
+MYSQL --> MYSQL_EXP
+NODE1 --> PROM
+NODE2 --> PROM
+MYSQL_EXP --> PROM
+
+PROM --> ALERT
+PROM --> GRAFANA
+
+PROMTAIL --> LOKI
+LOKI --> GRAFANA
+
+### Explication de l'architecture
+
+| Composant           | Rôle                                                      |
+| ------------------- | --------------------------------------------------------- |
+| **MySQL**           | Base de données supervisée                                |
+| **node_exporter**   | Collecte les métriques système (CPU, RAM, disque, réseau) |
+| **mysqld_exporter** | Expose les métriques MySQL pour Prometheus                |
+| **Prometheus**      | Scrape les métriques des exporters                        |
+| **Alertmanager**    | Gère et route les alertes Prometheus                      |
+| **Promtail**        | Collecte les logs des conteneurs                          |
+| **Loki**            | Stocke et indexe les logs                                 |
+| **Grafana**         | Visualisation des métriques et logs                       |
+
+### Flux de données
+
+1️ - Exporters exposent les métriques
+2️ - Prometheus scrape les métriques
+3️ - Alertmanager reçoit les alertes
+4️ - Promtail collecte les logs Docker
+5️ - Loki stocke les logs
+6️ - Grafana visualise métriques + logs
 
 ___
 

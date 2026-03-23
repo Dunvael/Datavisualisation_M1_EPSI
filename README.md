@@ -16,6 +16,7 @@ ___
 * Alertes configurées
 * Déploiement du projet (script auto deploy.sh)
 * Commandes (déploiement)
+* Test d’incident Loki
 * Vérifications rapides
 * Accès aux interfaces
 * Nettoyage / persistance
@@ -79,6 +80,7 @@ Datavisualisation_M1_EPSI/
 │   ├── .env.example
 │   ├── deploy.sh
 │   ├── docker-compose.yml
+│   ├── incident_loki_test.sh
 │   ├── resolution_erreurs.md
 │   │
 │   ├── alertmanager/
@@ -137,6 +139,7 @@ ___
 | **docker-compose.yml**                               | Définit tous les services Docker (Prometheus, Grafana, Loki, MySQL, exporters…). |
 | **.env**                                             | Définit toutes les variables nécessaires au bon fonctionnement de la stack. |
 | **deploy.sh**                                        | Script automatisé pour déployer toute la stack.                                  |
+| **incident_loki_test.sh** | Script de génération d’un incident simulé pour produire des logs `INFO/WARN/ERROR` visibles dans Loki via Promtail. |
 | **resolution_erreurs.md**                            | Notes et procédures de résolution d’erreurs rencontrées pendant le TP.           |
 | **alertmanager/alertmanager.yml**                    | Configuration d’Alertmanager pour gérer les alertes Prometheus.                  |
 | **prometheus/prometheus.yml**                        | Configuration principale de Prometheus : scraping des métriques.                 |
@@ -153,7 +156,6 @@ ___
 | **.env.example** | Modèle de variables d’environnement à copier en `.env` avant le déploiement. |
 | **grafana/dashboards/api/tp-api-n1.json** | Dashboard principal N1 orienté vue synthétique de l’API : disponibilité, trafic, erreurs, latence, corrélation avec l’infrastructure. |
 | **grafana/dashboards/api/tp-api-n2-diagnostic.json** | Dashboard secondaire N2 orienté diagnostic détaillé : endpoints lents, erreurs par endpoint, logs applicatifs, CPU/RAM, état de l’API. |
-| **alertmanager/alertmanager.yml** | Routage minimal des alertes Prometheus, regroupement, temporisation et receiver par défaut. |
 
 ___
 
@@ -214,7 +216,7 @@ ___
 ## Justification des requêtes PromQL
 
 Les dashboards et alertes reposent sur des requêtes PromQL documentées.  
-Le projet suit l’idée demandée dans le sujet : utiliser des requêtes lisibles, limiter la cardinalité, travailler avec des fenêtres cohérentes (`[5m]`) et utiliser des **recording rules** pour éviter de recalculer en permanence les expressions coûteuses. :contentReference[oaicite:3]{index=3}
+Le projet suit l’idée demandée dans le sujet : utiliser des requêtes lisibles, limiter la cardinalité, travailler avec des fenêtres cohérentes (`[5m]`) et utiliser des **recording rules** pour éviter de recalculer en permanence les expressions coûteuses.
 
 ### 1. Disponibilité de l’API
 
@@ -482,7 +484,7 @@ ___
 - **Latence p95 > 500 ms pendant 10 min** : seuil choisi pour détecter une dégradation perceptible côté utilisateur
 - **CPU > 85 % pendant 15 min** : seuil de saturation durable, en évitant les pics trop courts
 - **Target down pendant 2 min** : seuil court pour détecter rapidement une perte de collecte ou une indisponibilité
-- 
+
 ___
 
 ## Déploiement du projet (script auto deploy.sh)
@@ -594,6 +596,74 @@ docker compose up -d prometheus grafana mysqld-exporter node-exporter-host node-
 
 ___
 
+## Test d’incident Loki
+
+Pour valider la remontée des logs dans Loki, un script `incident_loki_test.sh` est fourni.
+
+Ce script lance un conteneur Docker éphémère qui génère volontairement des logs de type :
+
+- `INFO`
+- `WARN`
+- `ERROR`
+
+Ces logs sont collectés automatiquement par **Promtail**, puis envoyés vers **Loki** et consultables dans **Grafana**.
+
+### Lancer le test
+
+```bash
+chmod +x incident_loki_test.sh
+./incident_loki_test.sh
+```
+
+### Vérifier dans Grafana / Loki
+
+Exemples de requêtes LogQL :
+
+```logql
+{job="docker"} |= "incident=test"
+```
+
+```logql
+{job="docker"} |= "ERROR"
+```
+
+```logql
+{job="docker"} |= "demo-app"
+```
+
+### Objectif du test
+
+Ce scénario permet de simuler un incident applicatif et de vérifier que :
+
+* les logs Docker sont bien collectés par Promtail
+* les logs remontent correctement dans Loki
+* ils sont exploitables dans Grafana pour le diagnostic
+
+### Comment l'utiliser
+
+Depuis le dossier `tp_dataviz` :
+
+```Bash
+chmod +x incident_loki_test.sh
+./incident_loki_test.sh
+```
+
+Ensuite dans Grafana > Explore > Loki, rechercher par exemple :
+
+```logql
+{job="docker"} |= "incident=test"
+```
+
+```logql
+{job="docker"} |= "ERROR"
+```
+
+```logql
+{job="docker"} |= "demo-app"
+```
+
+___
+
 ## Vérifications rapides
 
 ### Voir l’état des conteneurs
@@ -677,7 +747,7 @@ curl -s "http://localhost:3100/loki/api/v1/labels" | jq '.status'
 curl -I http://localhost:9080
 ```
 
-### Vérifier les données persistantes via volumes : prom_data, grafana_data, mysql_data, loki_data
+### Vérifier les données persistantes via volumes : prom_data, grafana_data, mysql_data, loki_data, alertmanager_data
 
 ```Bash
 docker volume ls
@@ -687,11 +757,14 @@ ___
 
 ## Accès aux interfaces
 
-| Service    | URL                                                        |
-| ---------- | ---------------------------------------------------------- |
-| Grafana    | [http://localhost:3000](http://localhost:3000)             |
-| Prometheus | [http://localhost:9090](http://localhost:9090)             |
-| Loki API   | [http://localhost:3100/ready](http://localhost:3100/ready) |
+| Service     | URL                                                        |
+| ----------- | ---------------------------------------------------------- |
+| Grafana     | [http://localhost:3000](http://localhost:3000)             |
+| Prometheus  | [http://localhost:9090](http://localhost:9090)             |
+| Loki API    | [http://localhost:3100/ready](http://localhost:3100/ready) |
+| Alertmanager| [http://localhost:9093](http://localhost:9093)             |
+| Promtail | [http://localhost:9080](http://localhost:9080)                |
+| Demo App | [http://localhost:8080](http://localhost:8080)                |
 
 ___
 

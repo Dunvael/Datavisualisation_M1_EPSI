@@ -159,12 +159,12 @@ ___
 
 ### Flux de données
 
-1️ - Exporters exposent les métriques
-2️ - Prometheus scrape les métriques
-3️ - Alertmanager reçoit les alertes
-4️ - Promtail collecte les logs Docker
-5️ - Loki stocke les logs
-6️ - Grafana visualise métriques + logs
+1️ - Exporters exposent les métriques  
+2️ - Prometheus scrape les métriques  
+3️ - Alertmanager reçoit les alertes  
+4️ - Promtail collecte les logs Docker  
+5️ - Loki stocke les logs  
+6️ - Grafana visualise métriques + logs  
 
 ___
 

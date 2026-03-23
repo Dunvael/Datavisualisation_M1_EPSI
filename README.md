@@ -73,6 +73,7 @@ Datavisualisation_M1_EPSI/
 │   │
 │   ├── .gitignore
 │   ├── deploy.sh
+│   ├── .env (non versionné sur GitHub)
 │   ├── docker-compose.yml
 │   ├── resolution_erreurs.md
 │   │
@@ -130,6 +131,7 @@ ___
 | **tp_dataviz/**                                      | Dossier principal contenant toute la stack d’observabilité.                      |
 | **.gitignore**                                       | Empêche certains fichiers locaux d’être poussés sur GitHub.                      |
 | **docker-compose.yml**                               | Définit tous les services Docker (Prometheus, Grafana, Loki, MySQL, exporters…). |
+| **.env**                                             | Définit toutes les variables nécessaires au bon fonctionnement de la stack. |
 | **deploy.sh**                                        | Script automatisé pour déployer toute la stack.                                  |
 | **resolution_erreurs.md**                            | Notes et procédures de résolution d’erreurs rencontrées pendant le TP.           |
 | **alertmanager/alertmanager.yml**                    | Configuration d’Alertmanager pour gérer les alertes Prometheus.                  |

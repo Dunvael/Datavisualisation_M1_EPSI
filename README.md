@@ -6,13 +6,16 @@ ___
 
 * Architecture du projet
 * Structure du repository
-* Détails des dossiers
-* Volumes Docker
+* Prérequis et fichier `.env`
+* Détails de chaque dossier
+* Volumes persistants Docker
 * Diagramme d'architecture
-* Déploiement
-* Vérifications
+* Notes utiles
+* Déploiement du projet (script auto deploy.sh)
+* Commandes (déploiement)
+* Vérifications rapides
 * Accès aux interfaces
-* Nettoyage
+* Nettoyage / persistance
 
 ___
 
@@ -102,6 +105,21 @@ Datavisualisation_M1_EPSI/
 ├── README.md
 └── projet_grafana.pdf                
 ```
+___
+
+### Prérequis et fichier `.env`
+
+Avant de lancer le projet, il est nécessaire de créer un fichier `.env` à la racine du dossier `tp_dataviz/` (il doit être au même niveau que le fichier deploy.sh).
+
+Ce fichier contient les variables d’environnement nécessaires au bon fonctionnement de la stack, notamment :
+
+- les identifiants MySQL
+- le mot de passe root MySQL
+- les identifiants de l’utilisateur utilisé par `mysqld_exporter`
+- les identifiants Grafana
+
+*Attention* : Pour des questions de sécurité, il est nécessaire d'ajouter ce fichier `.env` au fichier `.gitignore`. Le fichier .env ne doit pas être versionné sur GitHub, car il contient des informations sensibles.  
+Un fichier **`.env.example`** est fourni pour montrer la structure attendue, il suffit de modifier les valeurs de chaque variable.
 
 ___
 

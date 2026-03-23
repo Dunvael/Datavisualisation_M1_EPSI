@@ -142,42 +142,7 @@ ___
 
 ## Diagramme d'architecture
 
-flowchart TB
-
-subgraph Infrastructure
-    MYSQL[(MySQL Database)]
-end
-
-subgraph Exporters
-    NODE1[node_exporter_host]
-    NODE2[node_exporter_node2]
-    MYSQL_EXP[mysqld_exporter]
-end
-
-subgraph Monitoring
-    PROM[Prometheus]
-    ALERT[Alertmanager]
-end
-
-subgraph Logs
-    PROMTAIL[Promtail]
-    LOKI[Loki]
-end
-
-subgraph Visualization
-    GRAFANA[Grafana Dashboards]
-end
-
-MYSQL --> MYSQL_EXP
-NODE1 --> PROM
-NODE2 --> PROM
-MYSQL_EXP --> PROM
-
-PROM --> ALERT
-PROM --> GRAFANA
-
-PROMTAIL --> LOKI
-LOKI --> GRAFANA
+<img width="2079" height="1169" alt="diagram_infra" src="https://github.com/user-attachments/assets/f21ec3b7-2119-4270-bbce-762ad8af09bd" />
 
 ### Explication de l'architecture
 

@@ -10,7 +10,7 @@ ___
 * Détails de chaque dossier
 * Volumes persistants Docker
 * Diagramme d'architecture
-* Notes utiles
+* Justification des requêtes PromQL
 * Déploiement du projet (script auto deploy.sh)
 * Commandes (déploiement)
 * Vérifications rapides
@@ -186,20 +186,22 @@ ___
 5️ - Loki stocke les logs  
 6️ - Grafana visualise métriques + logs  
 
-___
-
-## Notes utiles
+### Versions
 
 Versions figées :
 
-* Grafana 12.2.0 (ou patch 12.2.x quand dispo) <https://github.com/grafana/grafana/releases>
+* Grafana 12.2.0 <https://github.com/grafana/grafana/releases>
 * Prometheus v3.7.2 <https://github.com/prometheus/prometheus/releases>
 * Node Exporter v1.10.2 <https://github.com/prometheus/node_exporter/releases>
 * mysqld-exporter v0.18.0 <>
 * MySQL 8.4.7 (LTS) <https://github.com/prometheus/mysqld_exporter/releases>
 * Loki 3.5.7 & Promtail 3.5.7 (Promtail en LTS) <https://github.com/grafana/loki/releases>
-* Pourquoi 8.4.x (LTS) pour MySQL ? Cycle LTS documenté : stabilité recommandée pour TP & prod. <https://endoflife.date/mysql>
-* Promtail : en LTS depuis fév. 2025 mais parfaitement utilisable pour ce TP. <https://grafana.com/docs/loki/latest/send-data/promtail>
+* Promtail : en LTS depuis fév. 2025 (remplacé par Alloy mi-2026). <https://grafana.com/docs/loki/latest/send-data/promtail>
+___
+
+## Justification des requêtes PromQL
+
+
 
 ___
 

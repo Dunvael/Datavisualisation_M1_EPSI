@@ -16,7 +16,7 @@ ___
 
 ___
 
-## 🧱 Architecture du projet
+## Architecture du projet
 Ce projet met en place une stack d’observabilité complète basée sur :
 
 - **Prometheus** → collecte des métriques
@@ -105,7 +105,7 @@ Datavisualisation_M1_EPSI/
 
 ___
 
-### 📁 Détails de chaque dossier
+### Détails de chaque dossier
 
 | Dossier / Fichier                                    | Rôle                                                                             |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -129,7 +129,7 @@ ___
 
 ___
 
-## 💾 Volumes persistants Docker
+## Volumes persistants Docker
 
 | Volume         | Contenu persisté                         | Monté où ?         |
 | -------------- | ---------------------------------------- | ------------------ |
@@ -207,14 +207,14 @@ ___
 
 Versions figées :
 
-* Grafana 12.2.0 (ou patch 12.2.x quand dispo) <https://github.com/grafana/grafana/releases?utm_source=chatgpt.com>
-* Prometheus v3.7.2 <https://github.com/prometheus/prometheus/releases?utm_source=chatgpt.com>
-* Node Exporter v1.10.2 <https://github.com/prometheus/node_exporter/releases?utm_source=chatgpt.com>
+* Grafana 12.2.0 (ou patch 12.2.x quand dispo) <https://github.com/grafana/grafana/releases>
+* Prometheus v3.7.2 <https://github.com/prometheus/prometheus/releases>
+* Node Exporter v1.10.2 <https://github.com/prometheus/node_exporter/releases>
 * mysqld-exporter v0.18.0 <>
-* MySQL 8.4.7 (LTS) <https://github.com/prometheus/mysqld_exporter/releases?utm_source=chatgpt.com>
+* MySQL 8.4.7 (LTS) <https://github.com/prometheus/mysqld_exporter/releases>
 * Loki 3.5.7 & Promtail 3.5.7 (Promtail en LTS) <https://github.com/grafana/loki/releases>
-* Pourquoi 8.4.x (LTS) pour MySQL ? Cycle LTS documenté : stabilité recommandée pour TP & prod. <https://endoflife.date/mysql?utm_source=chatgpt.com>
-* Promtail : en LTS depuis fév. 2025 mais parfaitement utilisable pour ce TP. <https://grafana.com/docs/loki/latest/send-data/promtail/?utm_source=chatgpt.com>
+* Pourquoi 8.4.x (LTS) pour MySQL ? Cycle LTS documenté : stabilité recommandée pour TP & prod. <https://endoflife.date/mysql>
+* Promtail : en LTS depuis fév. 2025 mais parfaitement utilisable pour ce TP. <https://grafana.com/docs/loki/latest/send-data/promtail>
 
 ___
 

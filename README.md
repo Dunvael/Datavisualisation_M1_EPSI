@@ -10,7 +10,10 @@ ___
 * Détails de chaque dossier
 * Volumes persistants Docker
 * Diagramme d'architecture
+* Versions utilisées
+* SLI / SLO et seuils
 * Justification des requêtes PromQL
+* Alertes configurées
 * Déploiement du projet (script auto deploy.sh)
 * Commandes (déploiement)
 * Vérifications rapides
@@ -72,8 +75,9 @@ Datavisualisation_M1_EPSI/
 ├── tp_dataviz/
 │   │
 │   ├── .gitignore
+│   ├── .env (non versionné)
+│   ├── .env.example
 │   ├── deploy.sh
-│   ├── .env (non versionné sur GitHub)
 │   ├── docker-compose.yml
 │   ├── resolution_erreurs.md
 │   │
@@ -81,12 +85,12 @@ Datavisualisation_M1_EPSI/
 │   │   └── alertmanager.yml
 │   │
 │   ├── grafana/
-│   │   │
 │   │   ├── dashboards/
 │   │   │   ├── api/
+│   │   │   │   ├── tp-api-n1.json
+│   │   │   │   └── tp-api-n2-diagnostic.json
 │   │   │   └── infra/
 │   │   │       └── tp-stack-overview.json
-│   │   │
 │   │   └── provisioning/
 │   │       ├── dashboards/
 │   │       │   └── dashboards.yml
@@ -104,7 +108,7 @@ Datavisualisation_M1_EPSI/
 │           └── recording.yml
 │
 ├── README.md
-└── projet_grafana.pdf                
+└── projet_grafana.pdf              
 ```
 ___
 
@@ -146,17 +150,22 @@ ___
 | **loki/promtail-config.yml**                         | Configuration de Promtail pour collecter les logs Docker.                        |
 | **README.md**                                        | Documentation complète du projet.                                                |
 | **projet_grafana.pdf**                               | Documentation du projet et présentation du TP.                                   |
+| **.env.example** | Modèle de variables d’environnement à copier en `.env` avant le déploiement. |
+| **grafana/dashboards/api/tp-api-n1.json** | Dashboard principal N1 orienté vue synthétique de l’API : disponibilité, trafic, erreurs, latence, corrélation avec l’infrastructure. |
+| **grafana/dashboards/api/tp-api-n2-diagnostic.json** | Dashboard secondaire N2 orienté diagnostic détaillé : endpoints lents, erreurs par endpoint, logs applicatifs, CPU/RAM, état de l’API. |
+| **alertmanager/alertmanager.yml** | Routage minimal des alertes Prometheus, regroupement, temporisation et receiver par défaut. |
 
 ___
 
 ## Volumes persistants Docker
 
-| Volume         | Contenu persisté                         | Monté où ?         |
-| -------------- | ---------------------------------------- | ------------------ |
-| `prom_data`    | Base de données interne de Prometheus    | `/prometheus`      |
-| `grafana_data` | Dashboards, datasources, comptes Grafana | `/var/lib/grafana` |
-| `mysql_data`   | Données MySQL (tables, users, etc.)      | `/var/lib/mysql`   |
-| `loki_data`    | Logs stockés par Loki                    | `/loki`            |
+| Volume              | Contenu persisté                         | Monté où ?         |
+| ------------------- | ---------------------------------------- | ------------------ |
+| `prom_data`         | Base de données interne de Prometheus    | `/prometheus`      |
+| `grafana_data`      | Dashboards, datasources, comptes Grafana | `/var/lib/grafana` |
+| `mysql_data`        | Données MySQL (tables, users, etc.)      | `/var/lib/mysql`   |
+| `loki_data`         | Logs stockés par Loki                    | `/loki`            |
+| `alertmanager_data` | État interne d’Alertmanager              | `/alertmanager`    |
 
 ___
 
@@ -186,23 +195,294 @@ ___
 5️ - Loki stocke les logs  
 6️ - Grafana visualise métriques + logs  
 
-### Versions
+___
 
-Versions figées :
+## Versions utilisées
 
-* Grafana 12.2.0 <https://github.com/grafana/grafana/releases>
-* Prometheus v3.7.2 <https://github.com/prometheus/prometheus/releases>
-* Node Exporter v1.10.2 <https://github.com/prometheus/node_exporter/releases>
-* mysqld-exporter v0.18.0 <>
-* MySQL 8.4.7 (LTS) <https://github.com/prometheus/mysqld_exporter/releases>
-* Loki 3.5.7 & Promtail 3.5.7 (Promtail en LTS) <https://github.com/grafana/loki/releases>
-* Promtail : en LTS depuis fév. 2025 (remplacé par Alloy mi-2026). <https://grafana.com/docs/loki/latest/send-data/promtail>
+- Grafana 12.2.0
+- Prometheus v3.7.2
+- Node Exporter v1.10.2
+- mysqld-exporter v0.18.0
+- MySQL 8.4.7 (LTS)
+- Alertmanager v0.28.1
+- Loki 3.5.7
+- Promtail 3.5.7
+- Demo App `quay.io/brancz/prometheus-example-app:v0.3.0`
+
 ___
 
 ## Justification des requêtes PromQL
 
+Les dashboards et alertes reposent sur des requêtes PromQL documentées.  
+Le projet suit l’idée demandée dans le sujet : utiliser des requêtes lisibles, limiter la cardinalité, travailler avec des fenêtres cohérentes (`[5m]`) et utiliser des **recording rules** pour éviter de recalculer en permanence les expressions coûteuses. :contentReference[oaicite:3]{index=3}
+
+### 1. Disponibilité de l’API
+
+```promql
+max(up{job="demo_app",instance="$instance"}) or on() vector(0)
+```
+
+Rôle : vérifier si l’instance sélectionnée de l’application est joignable par Prometheus.
+Pourquoi cette requête :
+
+* up est l’indicateur standard de succès d’un scrape Prometheus
+* max(...) garantit une valeur simple à afficher dans un panneau stat
+* or on() vector(0) permet d’obtenir 0 même si aucune série n’est retournée, ce qui évite un panneau vide
+
+### 2. Trafic applicatif (req/s)
+
+```promql
+sum(clamp_min(demo_app:http_requests:rate5m_total{instance="$instance"}, 0)) or on() vector(0)
+```
+
+Rôle : mesurer le débit de requêtes HTTP de l’application.
+Pourquoi cette requête :
+
+* la métrique affichée provient d’une recording rule calculée à partir de rate(http_requests_total[5m])
+* la fenêtre de 5 minutes lisse les variations trop brutales
+* clamp_min(..., 0) évite l’affichage de valeurs négatives liées à d’éventuels resets de compteur
+cela permet une lecture simple du trafic moyen récent
+
+### 3. Taux d’erreur HTTP
+
+```promql
+(clamp_min(demo_app:http_errors:ratio5m, 0) or on() vector(0)) * 100
+```
+
+Rôle : mesurer le pourcentage de requêtes en erreur (4xx et 5xx).
+Pourquoi cette requête :
+
+* le ratio d’erreur est plus utile qu’un simple nombre brut car il tient compte du volume de trafic
+* la recording rule encapsule la formule :
+   * erreurs = requêtes 4xx|5xx
+   * total = toutes les requêtes
+* la multiplication par 100 permet un affichage direct en pourcentage
+cette métrique sert aussi de base à l’alerte métier
+
+### 4. Latence p95 de l’API
+
+```promql
+(clamp_min(demo_app:http_request_duration_seconds:p95_5m, 0) or on() vector(0)) * 1000
+```
+
+Rôle : afficher le 95e percentile du temps de réponse.
+Pourquoi cette requête :
+
+* le p95 est plus représentatif qu’une moyenne simple
+* la recording rule repose sur histogram_quantile(0.95, sum by (le)(rate(..._bucket[5m])))
+* la fenêtre 5 minutes lisse les fluctuations
+* la multiplication par 1000 transforme les secondes en millisecondes pour un affichage plus parlant
+
+### 5. Saturation CPU hôte
+
+```promql
+clamp_min(
+  100 - (
+    avg by(instance) (
+      rate(node_cpu_seconds_total{job=~"node_exporter_host|node_exporter_node2",mode="idle",instance="$node_instance"}[5m])
+    ) * 100
+  ),
+  0
+) or on() vector(0)
+```
+
+Rôle : mesurer l’utilisation CPU du nœud surveillé.
+Pourquoi cette requête :
+
+* node_cpu_seconds_total{mode="idle"} mesure le temps CPU inactif
+* 100 - idle% donne donc le taux d’utilisation
+* avg by(instance) agrège les cœurs CPU d’une machine
+* la fenêtre [5m] évite de réagir à un pic très court
+* cette métrique sert à corréler une saturation hôte avec une hausse de latence API
+
+### 6. Saturation mémoire hôte
+
+```promql
+((1 - (node_memory_MemAvailable_bytes{instance="$node_instance"} / node_memory_MemTotal_bytes{instance="$node_instance"})) * 100) or on() vector(0)
+```
+
+Rôle : mesurer le pourcentage de mémoire utilisée.
+Pourquoi cette requête :
+
+* MemAvailable est plus pertinent que MemFree sur Linux
+* le ratio mémoire utilisée / mémoire totale donne une lecture simple en pourcentage
+* cette métrique aide à identifier une saturation durable du nœud
+
+### 7. Occupation disque
+
+```promql
+(100 * (
+  1 - (
+    sum(node_filesystem_avail_bytes{instance="$node_instance",fstype!~"tmpfs|overlay|squashfs|nsfs",mountpoint!~"/(sys|proc|dev|run)($|/)"})
+    /
+    sum(node_filesystem_size_bytes{instance="$node_instance",fstype!~"tmpfs|overlay|squashfs|nsfs",mountpoint!~"/(sys|proc|dev|run)($|/)"})
+  )
+)) or on() vector(0)
+```
+
+Rôle : mesurer l’occupation disque utile.
+Pourquoi cette requête :
+
+* exclusion des pseudo-filesystems (tmpfs, overlay, squashfs, etc.) pour ne garder que les volumes pertinents
+* on calcule le ratio espace disponible / espace total, puis on en déduit le pourcentage utilisé
+* utile pour détecter un risque de saturation stockage
+
+### 8. Top endpoints les plus lents
+
+```promql
+topk(5, clamp_min(demo_app:http_request_duration_seconds:p95_5m:by_handler, 0))
+```
+
+Rôle : identifier les 5 endpoints les plus lents.
+Pourquoi cette requête :
+
+* topk(5, ...) est demandé dans le sujet comme type de requête utile
+* la mesure par handler permet d’orienter directement le diagnostic vers les routes les plus coûteuses
+* l’utilisation d’une recording rule réduit le coût de calcul dans Grafana
+
+### 9. Erreurs par endpoint
+
+```promql
+clamp_min(sum by(handler) (rate(http_requests_total{job="demo_app",code=~"4..|5.."}[5m])), 0) or on() vector(0)
+```
+
+Rôle : localiser quel endpoint produit le plus d’erreurs.
+Pourquoi cette requête :
+
+* agrégation par handler pour identifier rapidement la route fautive
+* filtre sur 4xx|5xx pour isoler les réponses anormales
+* la fenêtre 5 minutes permet d’observer une tendance récente sans trop de bruit
+
+### 10. Disponibilité MySQL
+
+```promql
+max(mysql_up{instance="$mysql_instance"}) or on() vector(0)
+```
+
+Rôle : vérifier que MySQL répond correctement via mysqld_exporter.
+Pourquoi cette requête :
+
+* mysql_up est l’indicateur standard de disponibilité exposé par l’exporter
+* le panneau stat permet de vérifier instantanément l’état de la base
+* cet indicateur est essentiel pour corréler un incident applicatif avec la base
+
+### 11. Débit MySQL (QPS)
+
+```promql
+rate(mysql_global_status_queries{instance="$mysql_instance"}[5m]) or on() vector(0)
+```
+
+Rôle : mesurer le nombre de requêtes SQL par seconde.
+Pourquoi cette requête :
+
+* rate() est adapté aux compteurs monotones MySQL
+* la fenêtre [5m] fournit une tendance stable
+* utile pour distinguer un problème de charge d’un problème de disponibilité
+
+### 12. InnoDB Buffer Pool Hit Ratio
+
+```promql
+((1 - (
+  mysql_global_status_innodb_buffer_pool_reads{instance="$mysql_instance"}
+  /
+  ignoring() mysql_global_status_innodb_buffer_pool_read_requests{instance="$mysql_instance"}
+)) * 100) or on() vector(0)
+```
+
+Rôle : mesurer l’efficacité du cache InnoDB.
+Pourquoi cette requête :
+
+* plus le ratio est proche de 100 %, plus les lectures sont servies depuis le buffer pool
+* une baisse peut signaler une pression mémoire ou un dimensionnement insuffisant
+* c’est un bon indicateur de performance base de données
+
+### Pourquoi utiliser des recording rules ?
+
+Les expressions suivantes ont été pré-calculées dans recording.yml :
+
+* demo_app:http_requests:rate5m
+* demo_app:http_requests:rate5m_total
+* demo_app:http_errors:ratio5m
+* demo_app:http_request_duration_seconds:p95_5m
+* demo_app:http_request_duration_seconds:p95_5m:by_instance
+* demo_app:http_request_duration_seconds:p95_5m:by_handler
+
+***Intérêt*** :
+
+* alléger les dashboards Grafana
+* éviter de recalculer des rate(), sum by(...) et histogram_quantile(...) à chaque rafraîchissement
+* améliorer la lisibilité des requêtes finales
+* respecter la contrainte du sujet sur les requêtes “propres” et pas trop coûteuses
+
+___
 
 
+---
+
+## Alertes configurées
+
+### 1. DemoAppHighErrorRate
+- **Type** : symptôme métier
+- **Expression** : `demo_app:http_errors:ratio5m > 0.02`
+- **Fenêtre** : `for: 5m`
+- **But** : détecter une hausse durable du taux d’erreur HTTP au-dessus de 2 %
+- **Action** : vérifier les endpoints fautifs dans le dashboard N2 et corréler avec les logs Loki
+
+### 2. DemoAppHighLatencyP95
+- **Type** : symptôme métier
+- **Expression** : `demo_app:http_request_duration_seconds:p95_5m > 0.5`
+- **Fenêtre** : `for: 10m`
+- **But** : détecter une hausse durable de la latence p95 au-dessus de 500 ms
+- **Action** : vérifier CPU/RAM, trafic, endpoints lents et logs applicatifs
+
+### 3. HostHighCPU
+- **Type** : saturation infrastructure
+- **Expression** : `(1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 0.85`
+- **Fenêtre** : `for: 15m`
+- **But** : détecter une saturation CPU prolongée au-dessus de 85 %
+- **Action** : identifier le nœud concerné et corréler avec la latence et les erreurs applicatives
+
+### 4. PrometheusTargetDown
+- **Type** : qualité de collecte
+- **Expression** : `up{job=~"prometheus|demo_app|node_exporter_host|node_exporter_node2|mysqld_exporter"} == 0`
+- **Fenêtre** : `for: 2m`
+- **But** : détecter une cible qui ne répond plus ou dont le scrape échoue
+- **Action** : vérifier le conteneur, le réseau Docker et l’endpoint `/metrics`
+
+___
+
+## SLI / SLO et seuils
+
+### SLI retenus
+
+#### 1. Disponibilité applicative
+- **SLI** : état `UP` de la cible `demo_app`
+- **Métrique utilisée** : `up{job="demo_app"}`
+- **Pourquoi** : permet de vérifier immédiatement si Prometheus arrive bien à scrapper l’application, donc si le service est joignable et expose ses métriques.
+
+#### 2. Taux d’erreur HTTP
+- **SLI** : proportion de réponses HTTP en erreur (`4xx` + `5xx`) sur l’ensemble des requêtes
+- **Métrique utilisée** : `http_requests_total`
+- **Pourquoi** : permet de mesurer la qualité de service côté utilisateur et de détecter rapidement une dégradation applicative.
+
+#### 3. Latence p95
+- **SLI** : 95e percentile du temps de réponse HTTP
+- **Métrique utilisée** : `http_request_duration_seconds_bucket`
+- **Pourquoi** : le p95 permet de mesurer une latence représentative sans être trop sensible aux valeurs extrêmes.
+
+### SLO retenu
+
+- **SLO** : conserver un taux d’erreur inférieur à **2 %** sur une fenêtre glissante de **5 minutes**
+- **Indicateur associé** : `demo_app:http_errors:ratio5m`
+- **Justification** : sur un TP court et une application de démonstration, une fenêtre de 5 minutes permet d’observer rapidement une dérive sans attendre 30 jours. Le seuil de 2 % est assez faible pour signaler une anomalie réelle, sans générer trop de bruit.
+
+### Seuils choisis
+
+- **Erreur > 2 % pendant 5 min** : seuil de dégradation notable du service
+- **Latence p95 > 500 ms pendant 10 min** : seuil choisi pour détecter une dégradation perceptible côté utilisateur
+- **CPU > 85 % pendant 15 min** : seuil de saturation durable, en évitant les pics trop courts
+- **Target down pendant 2 min** : seuil court pour détecter rapidement une perte de collecte ou une indisponibilité
+- 
 ___
 
 ## Déploiement du projet (script auto deploy.sh)

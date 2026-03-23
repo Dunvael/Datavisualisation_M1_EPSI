@@ -119,7 +119,7 @@ Ce fichier contient les variables d’environnement nécessaires au bon fonction
 - les identifiants de l’utilisateur utilisé par `mysqld_exporter`
 - les identifiants Grafana
 
-*Attention* : Pour des questions de sécurité, il est nécessaire d'ajouter ce fichier `.env` au fichier `.gitignore`. Le fichier .env ne doit pas être versionné sur GitHub, car il contient des informations sensibles.  
+*Attention* : Pour des questions de sécurité, il est nécessaire d'ajouter ce fichier `.env` au fichier `.gitignore`. Le fichier `.env` ne doit pas être versionné sur GitHub, car il contient des informations sensibles.  
 Un fichier **`.env.example`** est fourni pour montrer la structure attendue, il suffit de modifier les valeurs de chaque variable.
 
 ___
